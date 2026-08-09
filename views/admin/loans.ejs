@@ -1,0 +1,50 @@
+<% header('Loan Management'); %>
+<% var msg = typeof message !== 'undefined' ? message : ''; %>
+<% if (msg) { %><div class="alert alert-success"><span class="alert-icon">✅</span><%= msg %></div><% } %>
+
+<div class="flex mb-16">
+  <div><div class="page-title" style="margin-bottom:4px;">Loan Management</div><p class="text-muted text-sm">View and manage all member loans</p></div>
+  <form method="POST" action="/admin/loans/process-overdue" style="display:inline;" onsubmit="event.preventDefault();confirmAction('Apply 10% default penalty to ALL overdue loans (due >30 days ago)?',function(){this.submit()}.bind(this))">
+    <button class="btn btn-danger btn-lg">Apply 10% Default Penalty to All Overdue</button>
+  </form>
+</div>
+
+<div class="grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px;">
+  <div class="stat-card"><div class="stat-value" style="color:#22c55e;"><%= loans.filter(function(l){return l.status==='active'}).length %></div><div class="stat-label">Active</div></div>
+  <div class="stat-card"><div class="stat-value" style="color:#22c55e;"><%= loans.filter(function(l){return l.status==='paid'}).length %></div><div class="stat-label">Paid</div></div>
+  <div class="stat-card"><div class="stat-value" style="color:#ef4444;"><%= loans.filter(function(l){return l.status==='defaulted'}).length %></div><div class="stat-label">Defaulted</div><div class="text-xs text-muted">KES <%= Number(loans.filter(function(l){return l.status==='defaulted'}).reduce(function(s,l){return s + l.amount_due - l.paid_amount},0)).toLocaleString() %> due</div></div>
+  <div class="stat-card"><div class="stat-value" style="color:#f59e0b;"><%= loans.filter(function(l){return l.status==='pending'}).length %></div><div class="stat-label">Pending</div></div>
+</div>
+
+<div class="card">
+  <% if (loans.length === 0) { %>
+    <div class="empty-state">
+      <div class="empty-icon">🏦</div>
+      <div class="empty-text">No loans have been issued yet.</div>
+    </div>
+  <% } else { %>
+    <div class="table-wrap">
+      <table>
+        <tr><th>Member</th><th style="text-align:right">Amount</th><th style="text-align:right">Amount Due</th><th style="text-align:right">Paid</th><th>Issued</th><th>Due</th><th>Status</th><th>Actions</th></tr>
+        <% loans.forEach(l => { %>
+          <tr>
+            <td><strong><%= l.first_name %> <%= l.last_name %></strong><br><span class="text-xs text-muted"><%= l.member_number %></span></td>
+            <td style="text-align:right;font-weight:700;">KES <%= Number(l.amount).toLocaleString() %></td>
+            <td style="text-align:right;font-weight:700;color:<%= l.status === 'active' || l.status === 'defaulted' ? '#ef4444' : '#22c55e' %>;">KES <%= Number(l.amount_due - l.paid_amount).toLocaleString() %></td>
+            <td style="text-align:right;">KES <%= Number(l.paid_amount).toLocaleString() %></td>
+            <td><%= l.issued_date %></td>
+            <td><%= l.due_date %></td>
+            <td><span class="badge badge-<%= l.status %>"><%= l.status %></span></td>
+            <td style="white-space:nowrap;">
+              <% if (l.status === 'active') { %>
+                <form method="POST" action="/admin/loans/mark-defaulted/<%= l.id %>" style="display:inline;" onsubmit="event.preventDefault();confirmAction('Mark this loan as defaulted with 10% penalty?',function(){this.submit()}.bind(this))">
+                  <button class="btn btn-sm btn-danger">Mark Defaulted</button>
+                </form>
+              <% } else { %><span class="text-xs text-muted">—</span><% } %>
+            </td>
+          </tr>
+        <% }) %>
+      </table>
+    </div>
+  <% } %>
+</div>

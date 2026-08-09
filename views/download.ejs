@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icons/icon-192.svg">
+  <title>Apwoche App — Download</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: #fff; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px;
+    }
+    .card {
+      background: #1e293b; border-radius: 20px; padding: 40px; max-width: 480px; width: 100%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5); text-align: center;
+    }
+    .logo { font-size: 64px; font-weight: 800; color: #f59e0b; margin-bottom: 8px; }
+    h1 { font-size: 28px; margin-bottom: 4px; }
+    .sub { color: #94a3b8; font-size: 14px; margin-bottom: 28px; }
+    .btn {
+      display: block; width: 100%; padding: 16px; border-radius: 12px; border: none;
+      font-size: 16px; font-weight: 700; cursor: pointer; text-decoration: none; transition: transform 0.2s, box-shadow 0.2s;
+      margin-bottom: 12px;
+    }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.3); }
+    .btn-install { background: #f59e0b; color: #0f172a; }
+    .btn-open { background: #3b82f6; color: #fff; }
+    .btn-outline { background: transparent; color: #94a3b8; border: 1.5px solid #334155; }
+    .device-box {
+      background: #0f172a; border-radius: 12px; padding: 16px; margin: 16px 0; text-align: left;
+    }
+    .device-box h3 { font-size: 14px; color: #f59e0b; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+    .device-box p, .device-box li { font-size: 13px; color: #cbd5e1; line-height: 1.6; }
+    .device-box ol { padding-left: 20px; }
+    .device-box ol li { margin-bottom: 4px; }
+    .icon { font-size: 24px; }
+    #installBtnPWA { display: none; }
+    .badge { display: inline-block; background: #22c55e; color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 20px; margin-left: 6px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">A</div>
+    <h1>Apwoche App</h1>
+    <p class="sub">Install on your device for the best experience</p>
+
+    <button id="installBtnPWA" class="btn btn-install" onclick="installPWA()">
+      📲 Install App
+    </button>
+
+    <a href="/login" class="btn btn-open">
+      🌐 Open in Browser
+    </a>
+
+    <div id="iosInstructions" style="display:none;">
+      <div class="device-box">
+        <h3>🍎 iPhone / iPad</h3>
+        <ol>
+          <li>Tap the <strong>Share</strong> button <span class="icon">⎙</span> in Safari</li>
+          <li>Scroll down and tap <strong>Add to Home Screen</strong></li>
+          <li>Tap <strong>Add</strong> in the top right</li>
+          <li>The app will appear on your home screen</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="device-box">
+      <h3>💻 Desktop (Chrome / Edge)</h3>
+      <ol>
+        <li>Click the <strong>Install</strong> icon <span class="icon">+</span> in the address bar</li>
+        <li>Or click <strong>⋮ &rarr; Install Apwoche App</strong></li>
+        <li>Launch from your desktop / start menu</li>
+      </ol>
+    </div>
+
+    <div class="device-box">
+      <h3>🤖 Android (Chrome)</h3>
+      <ol>
+        <li>Tap the <strong>⋮</strong> menu button</li>
+        <li>Tap <strong>Add to Home Screen</strong> or <strong>Install App</strong></li>
+        <li>Tap <strong>Install</strong></li>
+      </ol>
+    </div>
+
+    <a href="/login" class="btn btn-outline" style="margin-top:8px;">&larr; Back to Login</a>
+  </div>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(function() {});
+    }
+    var deferredPrompt = null;
+    window.addEventListener('beforeinstallprompt', function(e) {
+      e.preventDefault();
+      deferredPrompt = e;
+      document.getElementById('installBtnPWA').style.display = 'block';
+    });
+    function installPWA() {
+      if (!deferredPrompt) return;
+      document.getElementById('installBtnPWA').style.display = 'none';
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(function() { deferredPrompt = null; });
+    }
+    var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    if (isIOS) {
+      document.getElementById('iosInstructions').style.display = 'block';
+    }
+  </script>
+</body>
+</html>

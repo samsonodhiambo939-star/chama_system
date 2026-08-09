@@ -1,0 +1,40 @@
+<% header('Payment Approvals'); %>
+<div class="page-title">Payment Approvals</div>
+<p class="page-subtitle">Approve or reject member fine and member card payments</p>
+
+<div class="card">
+  <div class="card-header"><h2>Payment Requests</h2></div>
+  <% if (requests.length === 0) { %>
+    <div class="empty-state"><div class="empty-icon">✅</div><div class="empty-text">No payment requests pending.</div></div>
+  <% } else { %>
+    <div class="table-wrap">
+      <table>
+        <tr><th>Member</th><th>Type</th><th>Description</th><th style="text-align:right">Amount</th><th>Date</th><th>Status</th><th>Actions</th></tr>
+        <% requests.forEach(r => { %>
+          <tr>
+            <td><strong><%= r.first_name %> <%= r.last_name %></strong><br><span class="text-xs text-muted"><%= r.member_number %></span></td>
+            <td><span class="badge badge-<%= r.payment_type === 'fine' ? 'warning' : (r.payment_type === 'loan' ? 'info' : 'info') %>"><%= r.payment_type === 'fine' ? 'Fine' : (r.payment_type === 'loan' ? 'Loan' : 'Card') %></span></td>
+            <td class="text-sm"><%= r.description || '—' %></td>
+            <td style="text-align:right;font-weight:700;">KES <%= Number(r.amount).toLocaleString() %></td>
+            <td class="text-sm"><%= new Date(r.created_at).toLocaleString() %></td>
+            <td><span class="badge badge-<%= r.status %>"><%= r.status %></span></td>
+            <td>
+              <% if (r.status === 'pending') { %>
+                <div style="display:flex;gap:6px;">
+                  <form method="POST" action="/admin/payments/approve/<%= r.id %>">
+                    <button class="btn btn-success btn-sm">Approve</button>
+                  </form>
+                  <form method="POST" action="/admin/payments/reject/<%= r.id %>" onsubmit="return confirm('Reject this payment?')">
+                    <button class="btn btn-danger btn-sm">Reject</button>
+                  </form>
+                </div>
+              <% } else { %>
+                <span class="text-xs text-muted">—</span>
+              <% } %>
+            </td>
+          </tr>
+        <% }) %>
+      </table>
+    </div>
+  <% } %>
+</div>

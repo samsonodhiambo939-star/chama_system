@@ -1,0 +1,7 @@
+<% if (typeof user !== 'undefined' && user) { header('Error'); %>
+<div class="page-title">Something went wrong</div>
+<div class="alert alert-error"><span class="alert-icon">⚠️</span><span><%= typeof message !== 'undefined' ? message : 'An unexpected error occurred.' %></span></div>
+<a href="/<%= user.role === 'admin' ? 'admin' : 'member' %>" class="btn btn-primary">Back to Dashboard</a>
+<% } else { %>
+<!DOCTYPE html><html><head><title>Error</title><style>body{font-family:sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f1f5f9;color:#0f172a;}.card{text-align:center;background:#fff;padding:40px;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,0.08);}.card h1{font-size:28px;margin-bottom:12px;}.card p{color:#64748b;margin-bottom:20px;}.card a{color:#3b82f6;text-decoration:none;font-weight:600;}</style></head><body><div class="card"><h1>⚠️</h1><h1><%= typeof message !== 'undefined' ? message : 'Something went wrong' %></h1><p>Please try again or contact support.</p><a href="/login">Go to Login</a></div></body></html>
+<% } %>

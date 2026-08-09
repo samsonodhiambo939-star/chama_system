@@ -1,0 +1,53 @@
+<% header('Manage Cycles'); %>
+<div class="flex mb-16">
+  <div><div class="page-title" style="margin-bottom:4px;">Bi-Weekly Cycles</div><p class="text-muted text-sm">Create and manage contribution cycles</p></div>
+  <button class="btn btn-success btn-lg" onclick="document.getElementById('cycleForm').style.display='block'" style="flex-shrink:0;">+ New Cycle</button>
+</div>
+
+<div id="cycleForm" style="display:none;" class="card">
+  <div class="card-header"><h3>Create New Cycle</h3></div>
+  <form method="POST" action="/admin/cycles/create">
+    <div class="form-row">
+      <div class="form-group"><label>Start Date</label><input type="date" name="start_date" required></div>
+      <div class="form-group"><label>End Date</label><input type="date" name="end_date" required></div>
+      <div class="form-group" style="display:flex;align-items:flex-end;gap:8px;">
+        <button class="btn btn-primary">Create & Open</button>
+        <button type="button" class="btn btn-outline" onclick="document.getElementById('cycleForm').style.display='none'">Cancel</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<% if (currentCycle) { %>
+  <div class="alert alert-info">
+    <span class="alert-icon">📅</span>
+    <span style="flex:1"><strong>Active Cycle:</strong> <%= currentCycle.start_date %> to <%= currentCycle.end_date %></span>
+    <form method="POST" action="/admin/cycles/close" style="display:inline;">
+      <button class="btn btn-danger btn-sm">Close Cycle</button>
+    </form>
+  </div>
+<% } else { %>
+  <div class="alert alert-info"><span class="alert-icon">ℹ️</span>No active cycle. Create one to allow member contributions.</div>
+<% } %>
+
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <tr><th>ID</th><th>Start Date</th><th>End Date</th><th>Contributions</th><th>Total</th><th>Status</th></tr>
+      <% cycles.forEach(c => { %>
+        <tr>
+          <td><span class="badge badge-closed">#<%= c.id %></span></td>
+          <td><%= c.start_date %></td>
+          <td><%= c.end_date %></td>
+          <td><%= c.contrib_count || 0 %></td>
+          <td class="font-mono">KES <%= Number(c.contrib_total || 0).toLocaleString() %></td>
+          <td><span class="badge <%= c.is_open ? 'badge-open' : 'badge-closed' %>"><%= c.is_open ? 'Open' : 'Closed' %></span></td>
+        </tr>
+      <% }) %>
+    </table>
+  </div>
+</div>
+
+<script>
+  if (window.location.hash === '#new') document.getElementById('cycleForm').style.display = 'block';
+</script>

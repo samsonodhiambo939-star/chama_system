@@ -1,0 +1,140 @@
+<% header('Admin Dashboard'); %>
+<div class="page-title">Admin Dashboard</div>
+<p class="page-subtitle">Overview of the Apwoche Chama System</p>
+
+<div class="grid">
+  <div class="stat-card" style="border:2px solid #f59e0b;background:#fffbeb;">
+    <div class="stat-icon" style="background:#fef3c7;color:#d97706;">🏦</div>
+    <div class="stat-value" style="color:#b45309;">KES <%= Number(stats.total_outstanding).toLocaleString() %></div>
+    <div class="stat-label" style="font-weight:800;">Total Outstanding Loans</div>
+    <div style="font-size:12px;color:#92400e;margin-top:2px;">Active: KES <%= Number(stats.active_loan_amount).toLocaleString() %> &middot; Defaulted: KES <%= Number(stats.defaulted_amount).toLocaleString() %></div>
+    <div class="stat-bar"><div class="stat-bar-fill" style="width:100%;background:#d97706;"></div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:#eff6ff;color:#3b82f6;">👥</div>
+    <div class="stat-value"><%= stats.total_members %></div>
+    <div class="stat-label">Active Members</div>
+    <div class="stat-bar"><div class="stat-bar-fill" style="width:100%;background:#3b82f6;"></div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:#f0fdf4;color:#22c55e;">📅</div>
+    <div class="stat-value"><%= stats.total_cycles %></div>
+    <div class="stat-label">Total Cycles</div>
+    <div class="stat-bar"><div class="stat-bar-fill" style="width:70%;background:#22c55e;"></div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:#fef3c7;color:#f59e0b;">🏦</div>
+    <div class="stat-value"><%= stats.active_loans %></div>
+    <div class="stat-label">Active Loans</div>
+    <div style="font-size:13px;font-weight:600;color:#b45309;margin-top:4px;">KES <%= Number(stats.active_loan_amount).toLocaleString() %></div>
+    <div class="stat-bar"><div class="stat-bar-fill" style="width:40%;background:#f59e0b;"></div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:#fef2f2;color:#ef4444;">📉</div>
+    <div class="stat-value"><%= stats.defaulted_loans %></div>
+    <div class="stat-label">Defaulted Loans</div>
+    <div style="font-size:13px;font-weight:600;color:#991b1b;margin-top:4px;">KES <%= Number(stats.defaulted_amount).toLocaleString() %></div>
+    <div class="stat-bar"><div class="stat-bar-fill" style="width:<%= Math.min(stats.defaulted_loans / Math.max(stats.total_loans,1) * 100, 100) %>%;background:#ef4444;"></div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:#f0fdf4;color:#16a34a;">💚</div>
+    <div class="stat-value">KES <%= Number(stats.active_paid_amount).toLocaleString() %></div>
+    <div class="stat-label">Amount Paid (Active Loans)</div>
+    <div class="stat-bar"><div class="stat-bar-fill" style="width:100%;background:#16a34a;"></div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:#fef3c7;color:#d97706;">⏳</div>
+    <div class="stat-value"><%= stats.pending_loans %></div>
+    <div class="stat-label">Pending Loans</div>
+    <div style="font-size:13px;font-weight:600;color:#d97706;margin-top:4px;">KES <%= Number(stats.pending_loan_amount).toLocaleString() %></div>
+    <div class="stat-bar"><div class="stat-bar-fill" style="width:100%;background:#d97706;"></div></div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:24px;">
+  <div class="card-header"><h2>Fund Balances</h2></div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;">
+    <% var fundColors = { Welfare: { bg: '#fef2f2', color: '#ef4444', icon: '🛡️' }, Savings: { bg: '#f0fdf4', color: '#22c55e', icon: '💰' }, 'Loan Balance': { bg: '#fef3c7', color: '#f59e0b', icon: '🏦' }, Development: { bg: '#f5f3ff', color: '#8b5cf6', icon: '📈' } }; %>
+    <% fundBalances.forEach(function(f) { var fc = fundColors[f.name] || { bg: '#f1f5f9', color: '#64748b', icon: '📊' }; %>
+      <div style="background:<%= fc.bg %>;border-radius:12px;padding:16px;text-align:center;">
+        <div style="font-size:28px;margin-bottom:4px;"><%= fc.icon %></div>
+        <div style="font-size:12px;color:#64748b;text-transform:uppercase;font-weight:600;letter-spacing:0.5px;"><%= f.name %></div>
+        <div style="font-size:22px;font-weight:800;color:<%= fc.color %>;margin-top:4px;">KES <%= Number(f.total).toLocaleString() %></div>
+      </div>
+    <% }); %>
+    <div style="background:#fef2f2;border-radius:12px;padding:16px;text-align:center;">
+      <div style="font-size:28px;margin-bottom:4px;">⚖️</div>
+      <div style="font-size:12px;color:#64748b;text-transform:uppercase;font-weight:600;letter-spacing:0.5px;">Fines</div>
+      <div style="font-size:22px;font-weight:800;color:#ef4444;margin-top:4px;">KES <%= Number(totalFines).toLocaleString() %></div>
+    </div>
+    <div style="background:#e0f7fa;border-radius:12px;padding:16px;text-align:center;">
+      <div style="font-size:28px;margin-bottom:4px;">💳</div>
+      <div style="font-size:12px;color:#64748b;text-transform:uppercase;font-weight:600;letter-spacing:0.5px;">Member Card</div>
+      <div style="font-size:22px;font-weight:800;color:#006d77;margin-top:4px;">KES <%= Number(totalMemberCard).toLocaleString() %></div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h2>📋 Recent Meetings — Attendance</h2>
+    <a href="/admin/attendance" class="btn btn-primary btn-sm">View All</a>
+  </div>
+  <% if (recentMeetings.length === 0) { %>
+    <div class="empty-state">
+      <div class="empty-icon">📅</div>
+      <div class="empty-text">No meetings yet. Create a Meeting Minute to start taking attendance.</div>
+      <a href="/admin/minutes" class="btn btn-primary btn-sm" style="margin-top:8px;">+ Create Meeting Minutes</a>
+    </div>
+  <% } else { %>
+    <% recentMeetings.forEach(function(m) { %>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 18px;border-bottom:1px solid var(--border);">
+        <div>
+          <strong><%= m.title %></strong>
+          <span class="text-xs text-muted" style="margin-left:8px;"><%= m.meeting_date %></span>
+          <span style="margin-left:12px;font-size:12px;color:#22c55e;">✅ <%= m.present_count %></span>
+          <span style="font-size:12px;color:#ef4444;">❌ <%= m.absent_count %></span>
+        </div>
+        <a href="/admin/attendance/<%= m.id %>" class="btn btn-sm btn-outline">👥 Take Attendance</a>
+      </div>
+    <% }) %>
+  <% } %>
+</div>
+
+<% if (pendingContribs > 0 || pendingLoans > 0 || pendingPayments > 0) { %>
+  <div class="alert alert-warning">
+    <span class="alert-icon">⏳</span>
+    <span style="flex:1">
+      <strong>Pending Approvals:</strong>
+      <%= pendingContribs %> contribution<%= pendingContribs !== 1 ? 's' : '' %>
+      <% if (pendingLoans > 0) { %> &middot; <%= pendingLoans %> loan<%= pendingLoans !== 1 ? 's' : '' %><% } %>
+      <% if (pendingPayments > 0) { %> &middot; <%= pendingPayments %> repayment<%= pendingPayments !== 1 ? 's' : '' %><% } %>
+    </span>
+    <a href="/admin/approvals" class="btn btn-warning btn-sm">Review All</a>
+  </div>
+<% } %>
+
+<div class="card">
+  <div class="card-header"><h2>Recent Activity</h2></div>
+  <% if (recentContributions.length === 0) { %>
+    <div class="empty-state">
+      <div class="empty-icon">📋</div>
+      <div class="empty-text">No activity yet across the system.</div>
+    </div>
+  <% } else { %>
+    <div class="table-wrap">
+      <table>
+        <tr><th>Member</th><th>Fund</th><th style="text-align:right">Amount</th><th>Status</th><th>Date</th></tr>
+        <% recentContributions.forEach(c => { %>
+          <tr>
+            <td><strong><%= c.member %></strong></td>
+            <td><%= c.fund %></td>
+            <td style="text-align:right;font-weight:700;">KES <%= Number(c.amount).toLocaleString() %></td>
+            <td><span class="badge badge-<%= c.status %>"><%= c.status %></span></td>
+            <td><%= new Date(c.created_at).toLocaleDateString() %></td>
+          </tr>
+        <% }) %>
+      </table>
+    </div>
+  <% } %>
+</div>

@@ -1,0 +1,147 @@
+<% header('Welfare Registration Detail'); %>
+<div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;">
+  <img src="/images/logo.jpeg" alt="Logo" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid #3b82f6;padding:2px;background:#fff;" onerror="this.style.display='none'">
+  <div>
+    <div class="page-title" style="margin-bottom:2px;">Welfare Registration</div>
+    <p class="page-subtitle" style="margin-bottom:0;"><%= reg.member_number %> — <%= reg.first_name %> <%= reg.last_name %></p>
+  </div>
+</div>
+
+<div class="card" style="border-top:4px solid #f59e0b;">
+  <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+    <span class="badge <%= reg.edit_requested ? 'badge-warning' : 'badge-info' %>"><%= reg.edit_requested ? 'Edit Requested' : 'No Edit Request' %></span>
+    <span class="badge badge-active">Submitted: <%= new Date(reg.submitted_at).toLocaleDateString() %></span>
+    <span class="badge badge-closed"><%= reg.member_number %></span>
+  </div>
+  <% if (reg.edit_requested && (user.admin_role === 'chairman' || user.admin_role === 'treasurer')) { %>
+  <form method="POST" action="/admin/welfare/registrations/unlock/<%= reg.id %>" style="margin-bottom:0;">
+    <button class="btn btn-warning" style="padding:10px 24px;border-radius:10px;font-size:14px;">🔓 Unlock for Editing</button>
+  </form>
+  <% } %>
+</div>
+
+<div class="card" style="border-top:4px solid #3b82f6;">
+  <div class="card-header"><h2 style="color:#3b82f6;">1.0 PERSONAL INFORMATION</h2></div>
+
+  <div style="background:linear-gradient(135deg,#eff6ff,#dbeafe);padding:12px 16px;border-radius:8px;margin-bottom:16px;">
+    <h3 style="font-size:14px;font-weight:700;color:#1e40af;">A) Full Names</h3>
+  </div>
+  <table>
+    <tr><td style="width:160px;font-weight:600;">Surname</td><td><%= formData.surname || '—' %></td></tr>
+    <tr><td style="font-weight:600;">First Name</td><td><%= formData.first_name || '—' %></td></tr>
+    <tr><td style="font-weight:600;">Middle Name</td><td><%= formData.middle_name || '—' %></td></tr>
+  </table>
+
+  <div style="background:linear-gradient(135deg,#eff6ff,#dbeafe);padding:12px 16px;border-radius:8px;margin:20px 0 16px;">
+    <h3 style="font-size:14px;font-weight:700;color:#1e40af;">B) Identification Details</h3>
+  </div>
+  <table>
+    <tr><td style="width:160px;font-weight:600;">Nationality</td><td><%= formData.nationality || '—' %></td></tr>
+    <tr><td style="font-weight:600;">ID Number</td><td><%= formData.id_number || '—' %></td></tr>
+    <tr><td style="font-weight:600;">Permanent Address</td><td><%= formData.permanent_address || '—' %></td></tr>
+    <tr><td style="font-weight:600;">Contact Number</td><td><%= formData.contact_number || '—' %></td></tr>
+    <tr><td style="font-weight:600;">Email</td><td><%= formData.email || '—' %></td></tr>
+  </table>
+
+  <div style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);padding:12px 16px;border-radius:8px;margin:20px 0 16px;">
+    <h3 style="font-size:14px;font-weight:700;color:#166534;">C) Occupation</h3>
+  </div>
+  <p><%= formData.occupation || '—' %></p>
+
+  <div style="background:linear-gradient(135deg,#fef3c7,#fde68a);padding:12px 16px;border-radius:8px;margin:20px 0 16px;">
+    <h3 style="font-size:14px;font-weight:700;color:#92400e;">D) Current Residence</h3>
+  </div>
+  <table>
+    <tr><td style="width:160px;font-weight:600;">Estate</td><td><%= formData.estate || '—' %></td></tr>
+    <tr><td style="font-weight:600;">Road</td><td><%= formData.road || '—' %></td></tr>
+    <tr><td style="font-weight:600;">Building</td><td><%= formData.building || '—' %></td></tr>
+    <tr><td style="font-weight:600;">House Number</td><td><%= formData.house_number || '—' %></td></tr>
+    <tr><td style="font-weight:600;">Home County</td><td><%= formData.home_county || '—' %></td></tr>
+    <tr><td style="font-weight:600;">Sub-location</td><td><%= formData.sub_location || '—' %></td></tr>
+  </table>
+
+  <div style="background:linear-gradient(135deg,#fdf2f8,#fce7f3);padding:12px 16px;border-radius:8px;margin:20px 0 16px;">
+    <h3 style="font-size:14px;font-weight:700;color:#9d174d;">E) Spouse Details</h3>
+  </div>
+  <table>
+    <tr><td style="width:160px;font-weight:600;">Name</td><td><%= formData.spouse_name || '—' %></td></tr>
+    <tr><td style="font-weight:600;">Phone</td><td><%= formData.spouse_phone || '—' %></td></tr>
+    <tr><td style="font-weight:600;">ID Number</td><td><%= formData.spouse_id || '—' %></td></tr>
+  </table>
+
+  <div style="background:linear-gradient(135deg,#fdf2f8,#fce7f3);padding:12px 16px;border-radius:8px;margin:20px 0 16px;">
+    <h3 style="font-size:14px;font-weight:700;color:#9d174d;">Children</h3>
+  </div>
+  <table>
+    <tr><th>#</th><th>Name</th><th>Age</th><th>Birth Certificate</th></tr>
+    <% for (let i = 1; i <= 4; i++) { %>
+    <tr>
+      <td><%= i %></td>
+      <td><%= formData['children_name_'+i] || '—' %></td>
+      <td><%= formData['children_age_'+i] || '—' %></td>
+      <td><%= formData['children_cert_'+i] || '—' %></td>
+    </tr>
+    <% } %>
+  </table>
+
+  <div style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);padding:12px 16px;border-radius:8px;margin:20px 0 16px;">
+    <h3 style="font-size:14px;font-weight:700;color:#166534;">F) Next of Kin</h3>
+  </div>
+  <table>
+    <tr><td style="width:160px;font-weight:600;">Name</td><td><%= formData.next_of_kin_name || '—' %></td></tr>
+    <tr><td style="font-weight:600;">Phone</td><td><%= formData.next_of_kin_phone || '—' %></td></tr>
+    <tr><td style="font-weight:600;">ID Number</td><td><%= formData.next_of_kin_id || '—' %></td></tr>
+    <tr><td style="font-weight:600;">Relationship</td><td><%= formData.next_of_kin_relationship || '—' %></td></tr>
+  </table>
+
+  <div style="background:linear-gradient(135deg,#eff6ff,#dbeafe);padding:12px 16px;border-radius:8px;margin:20px 0 16px;">
+    <h3 style="font-size:14px;font-weight:700;color:#1e40af;">G) Parents</h3>
+  </div>
+  <table>
+    <tr><th>#</th><th>Name</th><th>Phone</th><th>ID Number</th></tr>
+    <% for (let i = 1; i <= 2; i++) { %>
+    <tr>
+      <td><%= i %></td>
+      <td><%= formData['parent_name_'+i] || '—' %></td>
+      <td><%= formData['parent_phone_'+i] || '—' %></td>
+      <td><%= formData['parent_id_'+i] || '—' %></td>
+    </tr>
+    <% } %>
+  </table>
+
+  <div style="background:linear-gradient(135deg,#fef3c7,#fde68a);padding:12px 16px;border-radius:8px;margin:20px 0 16px;">
+    <h3 style="font-size:14px;font-weight:700;color:#92400e;">H) In-Laws</h3>
+  </div>
+  <table>
+    <tr><th>#</th><th>Name</th><th>Phone</th><th>ID Number</th></tr>
+    <% for (let i = 1; i <= 2; i++) { %>
+    <tr>
+      <td><%= i %></td>
+      <td><%= formData['inlaw_name_'+i] || '—' %></td>
+      <td><%= formData['inlaw_phone_'+i] || '—' %></td>
+      <td><%= formData['inlaw_id_'+i] || '—' %></td>
+    </tr>
+    <% } %>
+  </table>
+</div>
+
+<div class="card" style="border-top:4px solid #f59e0b;">
+  <div class="card-header"><h2 style="color:#f59e0b;">2.0 FOR OFFICIAL USE ONLY</h2></div>
+  <table>
+    <tr><td style="width:200px;font-weight:600;">Registration Number</td><td><%= reg.member_number %></td></tr>
+    <tr><td style="font-weight:600;">Submitted Date</td><td><%= new Date(reg.submitted_at).toLocaleDateString() %></td></tr>
+  </table>
+</div>
+
+<div style="margin-top:20px;display:flex;gap:12px;justify-content:center;">
+  <a href="/admin/welfare/registrations" class="btn btn-outline" style="padding:10px 24px;border-radius:10px;">← Back to List</a>
+  <button class="btn btn-primary" onclick="window.print()" style="padding:10px 24px;border-radius:10px;background:linear-gradient(135deg,#3b82f6,#7c3aed);">📄 Print / PDF</button>
+</div>
+
+<style>
+@media print {
+  .navbar, .btn, form button, .alert { display: none !important; }
+  .card { break-inside: avoid; box-shadow: none !important; border: 1px solid #ccc !important; }
+  .card:hover { box-shadow: none !important; }
+}
+</style>

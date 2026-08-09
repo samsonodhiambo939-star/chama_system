@@ -1,0 +1,40 @@
+<% header('Member Card'); %>
+<div class="page-title">Member Card</div>
+<p class="page-subtitle">Your card account — assigned amount and repayment</p>
+
+<% if (pendingRequests > 0) { %>
+  <div class="alert alert-info"><span class="alert-icon">⏳</span><span>You have <strong>KES <%= Number(pendingRequests).toLocaleString() %></strong> in pending repayments awaiting admin approval.</span></div>
+<% } %>
+
+<div class="grid" style="grid-template-columns:repeat(3,1fr);">
+  <div class="stat-card" style="border:2px solid #20b2aa;">
+    <div class="stat-icon" style="background:#e0f7fa;color:#006d77;">💳</div>
+    <div class="stat-value">KES <%= Number(card.assigned_amount).toLocaleString() %></div>
+    <div class="stat-label">Total Assigned</div>
+  </div>
+  <div class="stat-card" style="border:2px solid #22c55e;">
+    <div class="stat-icon" style="background:#f0fdf4;color:#22c55e;">✅</div>
+    <div class="stat-value">KES <%= Number(card.paid_amount).toLocaleString() %></div>
+    <div class="stat-label">Total Paid</div>
+  </div>
+  <div class="stat-card" style="border:2px solid #ef4444;">
+    <div class="stat-icon" style="background:#fef2f2;color:#ef4444;">📊</div>
+    <div class="stat-value" style="color:<%= balance > 0 ? '#ef4444' : '#22c55e' %>;">KES <%= Number(balance).toLocaleString() %></div>
+    <div class="stat-label">Outstanding Balance</div>
+  </div>
+</div>
+
+<% if (balance > 0) { %>
+  <div class="card">
+    <div class="card-header"><h2>Repay Card Amount</h2></div>
+    <form method="POST" action="/member/membercard/pay" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+      <div class="form-group" style="margin-bottom:0;flex:1;min-width:200px;">
+        <label>Repayment Amount (KES)</label>
+        <input type="number" name="repay_amount" min="1" max="<%= balance %>" step="1" class="input-lg" required placeholder="Enter amount">
+      </div>
+      <button class="btn btn-success btn-lg">💳 Repay Now</button>
+    </form>
+  </div>
+<% } else { %>
+  <div class="alert alert-success"><span class="alert-icon">✅</span><span>Your card account is fully settled!</span></div>
+<% } %>

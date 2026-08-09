@@ -1,0 +1,172 @@
+<% header('Meeting Minutes'); %>
+<div class="page-title">Meeting Minutes</div>
+<p class="page-subtitle">Record and manage meeting minutes (Secretary)</p>
+
+<% if (error) { %><div class="alert alert-error"><span class="alert-icon">❌</span><%= error %></div><% } %>
+<% if (message) { %><div class="alert alert-success"><span class="alert-icon">✅</span><%= message %></div><% } %>
+
+<div class="card">
+  <div class="card-header">
+    <h2>Add New Minutes</h2>
+    <button class="btn btn-primary btn-sm" onclick="document.getElementById('addMinutesForm').style.display='block'">+ New</button>
+  </div>
+  <div id="addMinutesForm" style="display:none;">
+    <form method="POST" action="/admin/minutes/add">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Meeting Title</label>
+          <input type="text" name="title" required placeholder="e.g. Monthly General Meeting">
+        </div>
+        <div class="form-group">
+          <label>Meeting Date</label>
+          <input type="date" name="meeting_date" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Minutes Content</label>
+        <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+          <button type="button" class="btn btn-sm btn-outline" id="recordBtn" onclick="toggleRecording()" style="display:flex;align-items:center;gap:6px;">🎤 Record</button>
+          <span id="recordStatus" class="text-xs text-muted" style="align-self:center;"></span>
+        </div>
+        <textarea name="content" id="minutesContent" rows="8" required placeholder="Write or speak the meeting minutes here..." style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:var(--input-bg);color:var(--text);font-family:inherit;"></textarea>
+      </div>
+      <button class="btn btn-primary">Save Minutes</button>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2>Past Minutes</h2></div>
+  <% if (minutes.length === 0) { %>
+    <div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">No meeting minutes recorded yet.</div></div>
+  <% } else { %>
+    <% minutes.forEach(m => { %>
+      <div style="border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;">
+          <div>
+            <h3 style="font-size:16px;font-weight:700;"><%= m.title %></h3>
+            <p class="text-xs text-muted"><%= m.meeting_date %> &middot; Created: <%= new Date(m.created_at).toLocaleDateString() %></p>
+          </div>
+          <div style="display:flex;gap:6px;" class="flex-start">
+            <a href="/admin/attendance/<%= m.id %>" class="btn btn-sm btn-outline">👥 Attendance</a>
+            <button class="btn btn-sm btn-outline" onclick="editMinutes(<%= m.id %>, '<%= m.title.replace(/'/g, "\\'") %>', '<%= m.meeting_date %>', '<%= m.content.replace(/'/g, "\\'").replace(/\n/g, '\\n') %>')">Edit</button>
+            <form method="POST" action="/admin/minutes/delete/<%= m.id %>" style="display:inline;" onsubmit="event.preventDefault();confirmAction('Delete these minutes?',function(){this.submit()}.bind(this))">
+              <button class="btn btn-sm btn-danger">Delete</button>
+            </form>
+          </div>
+        </div>
+        <div style="margin-top:12px;white-space:pre-wrap;font-size:14px;line-height:1.7;color:var(--text);"><%= m.content %></div>
+      </div>
+    <% }) %>
+  <% } %>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <h3>Edit Minutes</h3>
+    <form method="POST" action="/admin/minutes/edit/" id="editMinutesForm">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Meeting Title</label>
+          <input type="text" name="title" id="editTitle" required>
+        </div>
+        <div class="form-group">
+          <label>Meeting Date</label>
+          <input type="date" name="meeting_date" id="editDate" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Content</label>
+        <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+          <button type="button" class="btn btn-sm btn-outline" id="editRecordBtn" onclick="toggleEditRecording()" style="display:flex;align-items:center;gap:6px;">🎤 Record</button>
+          <span id="editRecordStatus" class="text-xs text-muted" style="align-self:center;"></span>
+        </div>
+        <textarea name="content" id="editContent" rows="8" required style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:var(--input-bg);color:var(--text);font-family:inherit;"></textarea>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-primary">Update</button>
+        <button type="button" class="btn btn-outline" onclick="document.getElementById('editModal').classList.remove('active')">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function editMinutes(id, title, date, content) {
+  document.getElementById('editTitle').value = title;
+  document.getElementById('editDate').value = date;
+  document.getElementById('editContent').value = content;
+  document.getElementById('editMinutesForm').action = '/admin/minutes/edit/' + id;
+  document.getElementById('editModal').classList.add('active');
+}
+
+// --- Voice Recording ---
+var recognition = null;
+var isRecording = false;
+var activeTextarea = null;
+var activeStatus = null;
+var activeBtn = null;
+
+function getSpeechRec() {
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return null;
+  var r = new SR();
+  r.continuous = true;
+  r.interimResults = true;
+  r.lang = 'en-US';
+  return r;
+}
+
+function toggleRecording() {
+  activeTextarea = document.getElementById('minutesContent');
+  activeStatus = document.getElementById('recordStatus');
+  activeBtn = document.getElementById('recordBtn');
+  startStopRecording();
+}
+
+function toggleEditRecording() {
+  activeTextarea = document.getElementById('editContent');
+  activeStatus = document.getElementById('editRecordStatus');
+  activeBtn = document.getElementById('editRecordBtn');
+  startStopRecording();
+}
+
+function startStopRecording() {
+  if (isRecording) {
+    if (recognition) { recognition.stop(); recognition = null; }
+    isRecording = false;
+    if (activeBtn) activeBtn.innerHTML = '🎤 Record';
+    if (activeStatus) activeStatus.textContent = '';
+    return;
+  }
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { alert('Voice recording is not supported in this browser. Please use Chrome or Edge.'); return; }
+  recognition = new SR();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.lang = 'en-US';
+  recognition.onresult = function(e) {
+    var transcript = '';
+    for (var i = e.resultIndex; i < e.results.length; i++) {
+      transcript += e.results[i][0].transcript;
+    }
+    if (activeTextarea) activeTextarea.value = transcript;
+  };
+  recognition.onerror = function(e) {
+    console.log('Speech error:', e.error);
+    isRecording = false;
+    if (activeBtn) activeBtn.innerHTML = '🎤 Record';
+    if (activeStatus) activeStatus.textContent = 'Error: ' + e.error;
+  };
+  recognition.onend = function() {
+    isRecording = false;
+    if (activeBtn) activeBtn.innerHTML = '🎤 Record';
+    if (activeStatus) activeStatus.textContent = '';
+  };
+  recognition.start();
+  isRecording = true;
+  if (activeBtn) activeBtn.innerHTML = '🔴 Stop';
+  if (activeStatus) activeStatus.textContent = 'Listening... speak now';
+}
+</script>

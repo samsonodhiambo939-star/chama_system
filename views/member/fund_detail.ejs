@@ -1,0 +1,44 @@
+<% header(fund.name); %>
+<div class="page-title"><%= fund.name %></div>
+<p class="page-subtitle">Your contribution history for <%= fund.name %></p>
+
+<div class="fund-stats-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;">
+  <div class="stat-card" style="border:2px solid #3b82f6;">
+    <div class="stat-icon" style="background:#eff6ff;color:#3b82f6;">💰</div>
+    <div class="stat-value">KES <%= Number(balance).toLocaleString() %></div>
+    <div class="stat-label">Current Balance</div>
+  </div>
+  <div class="stat-card" style="border:2px solid #22c55e;">
+    <div class="stat-icon" style="background:#f0fdf4;color:#22c55e;">📊</div>
+    <div class="stat-value"><%= contributions.length %></div>
+    <div class="stat-label">Total Contributions</div>
+  </div>
+  <div class="stat-card" style="border:2px solid #8b5cf6;">
+    <div class="stat-icon" style="background:#f5f3ff;color:#8b5cf6;">🏆</div>
+    <div class="stat-value">KES <%= Number(totalContributed).toLocaleString() %></div>
+    <div class="stat-label">Total Contributed (Approved)</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2>Contribution History</h2></div>
+  <% if (contributions.length === 0) { %>
+    <div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">No contributions yet for <%= fund.name %>.</div></div>
+  <% } else { %>
+    <div class="table-wrap">
+      <table>
+        <tr><th>Cycle</th><th style="text-align:right">Amount</th><th>Status</th><th>Submitted</th></tr>
+        <% contributions.forEach(c => { %>
+          <tr>
+            <td class="text-sm"><%= c.start_date %> to <%= c.end_date %></td>
+            <td style="text-align:right;font-weight:700;">KES <%= Number(c.amount).toLocaleString() %></td>
+            <td><span class="badge badge-<%= c.status %>"><%= c.status %></span></td>
+            <td class="text-sm"><%= new Date(c.created_at).toLocaleString() %></td>
+          </tr>
+        <% }) %>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<a href="/member" class="btn btn-outline">&larr; Back to Dashboard</a>

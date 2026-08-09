@@ -1,0 +1,40 @@
+<% header('Meeting Attendance'); %>
+<div class="page-title">Meeting Attendance</div>
+<p class="page-subtitle">Take attendance and apply fines per meeting</p>
+
+<% if (message) { %><div class="alert alert-success"><span class="alert-icon">✅</span><%= message %></div><% } %>
+<% if (error) { %><div class="alert alert-error"><span class="alert-icon">❌</span><%= error %></div><% } %>
+
+<% if (meetings.length === 0) { %>
+<div class="card">
+  <div class="empty-state">
+    <div class="empty-icon">📅</div>
+    <div class="empty-text">No meetings found.</div>
+    <p class="text-muted text-sm" style="margin-top:8px;">First create a Meeting Minute, then return here to take attendance.</p>
+    <a href="/admin/minutes" class="btn btn-primary" style="margin-top:12px;">+ Create Meeting Minutes</a>
+  </div>
+</div>
+<% } else { %>
+  <% meetings.forEach(function(m) { %>
+    <div class="card" style="margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h3 style="font-size:16px;font-weight:700;"><%= m.title %></h3>
+          <p class="text-xs text-muted"><%= m.meeting_date %></p>
+          <% if (m.totalMarked > 0) { %>
+            <p class="text-xs" style="margin-top:4px;">
+              <span style="color:#22c55e;">✅ <%= m.presentCount %> present</span> &middot;
+              <span style="color:#ef4444;">❌ <%= m.absentCount %> absent</span> &middot;
+              <span class="text-muted"><%= m.totalMarked %> total marked</span>
+            </p>
+          <% } else { %>
+            <p class="text-xs text-muted" style="margin-top:4px;">No attendance taken yet</p>
+          <% } %>
+        </div>
+        <a href="/admin/attendance/<%= m.id %>" class="btn btn-primary btn-lg">
+          <%= m.totalMarked > 0 ? '📋 Continue Attendance' : '👥 Take Attendance' %>
+        </a>
+      </div>
+    </div>
+  <% }) %>
+<% } %>

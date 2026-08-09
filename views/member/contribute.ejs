@@ -1,0 +1,85 @@
+<% header('Make Payments'); %>
+<div class="page-title">Make Payments</div>
+<p class="page-subtitle">Submit all your payments in one place — all require admin approval</p>
+
+<form method="POST" action="/member/contribute">
+  <!-- Cycle Contributions Section -->
+  <div class="card">
+    <div class="card-header">
+      <h2><%= cycle ? 'Cycle Contributions: ' + cycle.start_date + ' to ' + cycle.end_date : 'No Active Cycle' %></h2>
+    </div>
+    <% if (cycle) { %>
+      <p class="text-sm text-muted" style="margin-bottom:16px;">Enter amounts for each fund for the current cycle</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px,1fr));gap:12px;">
+        <% funds.filter(f => f.name !== 'Loans').forEach(f => { %>
+          <div class="fund-card" style="background:var(--bg-card);border-radius:10px;padding:14px;border:1.5px solid var(--border);">
+            <div style="font-size:13px;font-weight:600;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;"><%= f.name %></div>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="font-weight:700;color:var(--text-muted);flex-shrink:0;">KES</span>
+              <input type="number" name="fund_<%= f.id %>" min="0" max="10000000" step="1" value="<%= f.contributed_amount || '' %>" style="flex:1;min-width:0;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:15px;text-align:right;background:var(--input-bg);color:var(--text);" placeholder="0">
+            </div>
+            <% if (f.status) { %><div style="margin-top:6px;"><span class="badge badge-<%= f.status %>" style="font-size:11px;"><%= f.status %></span></div><% } %>
+          </div>
+        <% }) %>
+      </div>
+    <% } else { %>
+      <div class="alert alert-info" style="margin-bottom:0;"><span class="alert-icon">ℹ️</span><span>No active contribution cycle. You can still make payments below.</span></div>
+    <% } %>
+  </div>
+
+  <!-- Fines Section -->
+  <div class="card">
+    <div class="card-header"><h2>⚖️ Fine Repayment</h2></div>
+    <% if (totalFinesBalance > 0) { %>
+      <p class="text-sm text-muted" style="margin-bottom:8px;">Outstanding fines: <strong>KES <%= Number(totalFinesBalance).toLocaleString() %></strong>
+        <% if (pendingFineRequests > 0) { %> &middot; Pending approval: KES <%= Number(pendingFineRequests).toLocaleString() %><% } %>
+      </p>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <label style="font-weight:600;">Repay:</label>
+        <input type="number" name="fine_repay" min="0" max="<%= totalFinesBalance - pendingFineRequests %>" step="1" value="" style="flex:1;min-width:120px;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:15px;text-align:right;background:var(--input-bg);color:var(--text);" placeholder="0">
+        <button type="button" class="btn btn-sm btn-outline" onclick="this.previousElementSibling.value='<%= totalFinesBalance - pendingFineRequests %>'">Max</button>
+      </div>
+    <% } else { %>
+      <div class="alert alert-success" style="margin-bottom:0;"><span class="alert-icon">✅</span><span>No pending fines. Good standing!</span></div>
+    <% } %>
+  </div>
+
+  <!-- Member Card Section -->
+  <div class="card">
+    <div class="card-header"><h2>💳 Member Card Repayment</h2></div>
+    <% if (cardBalance > 0) { %>
+      <p class="text-sm text-muted" style="margin-bottom:8px;">Outstanding card balance: <strong>KES <%= Number(cardBalance).toLocaleString() %></strong>
+        <% if (pendingCardRequests > 0) { %> &middot; Pending approval: KES <%= Number(pendingCardRequests).toLocaleString() %><% } %>
+      </p>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <label style="font-weight:600;">Repay:</label>
+        <input type="number" name="card_repay" min="0" max="<%= cardBalance - pendingCardRequests %>" step="1" value="" style="flex:1;min-width:120px;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:15px;text-align:right;background:var(--input-bg);color:var(--text);" placeholder="0">
+        <button type="button" class="btn btn-sm btn-outline" onclick="this.previousElementSibling.value='<%= cardBalance - pendingCardRequests %>'">Max</button>
+      </div>
+    <% } else { %>
+      <div class="alert alert-success" style="margin-bottom:0;"><span class="alert-icon">✅</span><span>Card account fully settled!</span></div>
+    <% } %>
+  </div>
+
+  <!-- Loan Repayment Section -->
+  <div class="card">
+    <div class="card-header"><h2>🏦 Loan Repayment</h2></div>
+    <% if (activeLoan) { %>
+      <p class="text-sm text-muted" style="margin-bottom:8px;">Outstanding loan balance: <strong>KES <%= Number(activeLoan.amount_due).toLocaleString() %></strong>
+        <% if (pendingLoanRequests > 0) { %> &middot; Pending approval: KES <%= Number(pendingLoanRequests).toLocaleString() %><% } %>
+      </p>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <label style="font-weight:600;">Repay:</label>
+        <input type="number" name="loan_repay" min="0" max="<%= activeLoan.amount_due - pendingLoanRequests %>" step="1" value="" style="flex:1;min-width:120px;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:15px;text-align:right;background:var(--input-bg);color:var(--text);" placeholder="0">
+        <button type="button" class="btn btn-sm btn-outline" onclick="this.previousElementSibling.value='<%= activeLoan.amount_due - pendingLoanRequests %>'">Max</button>
+      </div>
+    <% } else { %>
+      <div class="alert alert-info" style="margin-bottom:0;"><span class="alert-icon">ℹ️</span><span>No active loan to repay.</span></div>
+    <% } %>
+  </div>
+
+  <div style="text-align:center;margin-top:24px;">
+    <button class="btn btn-primary btn-lg btn-full-mobile" style="min-width:300px;">Submit All Payments</button>
+    <p class="text-sm text-muted" style="margin-top:8px;">All payments require admin approval before they take effect</p>
+  </div>
+</form>

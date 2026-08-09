@@ -1,0 +1,203 @@
+<% header('Welfare Registration'); %>
+
+<div style="text-align:center;margin-bottom:24px;">
+  <img src="/images/logo.jpeg" alt="Apwoche Logo" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid #3b82f6;padding:3px;background:#fff;box-shadow:0 8px 30px rgba(59,130,246,0.2);margin-bottom:12px;" onerror="this.style.display='none'">
+  <div class="page-title" style="margin-bottom:4px;background:linear-gradient(135deg,#0f172a,#3b82f6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">APWOCHE INVESTMENT GROUP</div>
+  <p class="page-subtitle" style="margin-bottom:0;">WELFARE REG FORM</p>
+</div>
+
+<p style="font-size:13px;color:var(--text-muted);margin-bottom:20px;text-align:center;">Fill in all the required information in the spaces provided.</p>
+
+<% if (error) { %><div class="alert alert-error"><span class="alert-icon">❌</span><span><%= error %></span></div><% } %>
+<% if (success) { %><div class="alert alert-success"><span class="alert-icon">✅</span><span><%= success %></span></div><% } %>
+
+<% if (existing && existing.locked) { %>
+  <div class="alert alert-warning" style="margin-bottom:16px;background:linear-gradient(135deg,#fffbeb,#fef3c7);border-color:#fde68a;">
+    <span class="alert-icon">🔒</span>
+    <span>This form has been submitted and is locked.
+    <% if (existing.edit_requested) { %>
+      Edit request has been sent. Awaiting admin response.
+    <% } else { %>
+      <form method="POST" action="/member/welfare/register/request-edit" style="display:inline;">
+        <button class="btn btn-sm btn-warning" style="margin-left:8px;">Request Edit</button>
+      </form>
+    <% } %>
+    </span>
+  </div>
+<% } %>
+
+<form method="POST" action="/member/welfare/register">
+  <div class="card" style="border-top:4px solid #3b82f6;">
+    <div class="card-header"><h2 style="color:#3b82f6;">1.0 PERSONAL INFORMATION</h2></div>
+
+    <div style="background:linear-gradient(135deg,#eff6ff,#dbeafe);padding:12px 16px;border-radius:8px;margin-bottom:16px;">
+      <h3 style="font-size:14px;font-weight:700;color:#1e40af;">A) Full Names</h3>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Surname</label><input name="surname" value="<%= formData.surname || '' %>" <%= existing && existing.locked ? 'disabled' : '' %> required></div>
+      <div class="form-group"><label>First Name</label><input name="first_name" value="<%= formData.first_name || '' %>" <%= existing && existing.locked ? 'disabled' : '' %> required></div>
+      <div class="form-group"><label>Middle Name</label><input name="middle_name" value="<%= formData.middle_name || '' %>" <%= existing && existing.locked ? 'disabled' : '' %>></div>
+    </div>
+
+    <div style="background:linear-gradient(135deg,#eff6ff,#dbeafe);padding:12px 16px;border-radius:8px;margin:20px 0 16px;">
+      <h3 style="font-size:14px;font-weight:700;color:#1e40af;">B) Identification Details</h3>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Nationality</label><input name="nationality" value="<%= formData.nationality || '' %>" <%= existing && existing.locked ? 'disabled' : '' %> required></div>
+      <div class="form-group"><label>Identity Card Number</label><input name="id_number" value="<%= formData.id_number || '' %>" <%= existing && existing.locked ? 'disabled' : '' %> required></div>
+    </div>
+    <div class="form-group"><label>Permanent Address</label><input name="permanent_address" value="<%= formData.permanent_address || '' %>" <%= existing && existing.locked ? 'disabled' : '' %> required></div>
+    <div class="form-row">
+      <div class="form-group"><label>Contact Number(s)</label><input name="contact_number" value="<%= formData.contact_number || '' %>" <%= existing && existing.locked ? 'disabled' : '' %> required></div>
+      <div class="form-group"><label>Email Address</label><input type="email" name="email" value="<%= formData.email || '' %>" <%= existing && existing.locked ? 'disabled' : '' %>></div>
+    </div>
+
+    <div style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);padding:12px 16px;border-radius:8px;margin:20px 0 16px;">
+      <h3 style="font-size:14px;font-weight:700;color:#166534;">C) Occupation (Optional)</h3>
+    </div>
+    <div class="form-group"><input name="occupation" value="<%= formData.occupation || '' %>" <%= existing && existing.locked ? 'disabled' : '' %>></div>
+
+    <div style="background:linear-gradient(135deg,#fef3c7,#fde68a);padding:12px 16px;border-radius:8px;margin:20px 0 16px;">
+      <h3 style="font-size:14px;font-weight:700;color:#92400e;">D) Current Residence</h3>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Estate</label><input name="estate" value="<%= formData.estate || '' %>" <%= existing && existing.locked ? 'disabled' : '' %> required></div>
+      <div class="form-group"><label>Road (Optional)</label><input name="road" value="<%= formData.road || '' %>" <%= existing && existing.locked ? 'disabled' : '' %>></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Building</label><input name="building" value="<%= formData.building || '' %>" <%= existing && existing.locked ? 'disabled' : '' %> required></div>
+      <div class="form-group"><label>House Number (Optional)</label><input name="house_number" value="<%= formData.house_number || '' %>" <%= existing && existing.locked ? 'disabled' : '' %>></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Home County</label><input name="home_county" value="<%= formData.home_county || '' %>" <%= existing && existing.locked ? 'disabled' : '' %> required></div>
+      <div class="form-group"><label>Sub-location</label><input name="sub_location" value="<%= formData.sub_location || '' %>" <%= existing && existing.locked ? 'disabled' : '' %> required></div>
+    </div>
+
+    <div style="background:linear-gradient(135deg,#fdf2f8,#fce7f3);padding:12px 16px;border-radius:8px;margin:20px 0 16px;">
+      <h3 style="font-size:14px;font-weight:700;color:#9d174d;">E) Spouse Details</h3>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Name of Spouse</label><input name="spouse_name" value="<%= formData.spouse_name || '' %>" <%= existing && existing.locked ? 'disabled' : '' %>></div>
+      <div class="form-group"><label>Phone Number</label><input name="spouse_phone" value="<%= formData.spouse_phone || '' %>" <%= existing && existing.locked ? 'disabled' : '' %>></div>
+      <div class="form-group"><label>ID Number</label><input name="spouse_id" value="<%= formData.spouse_id || '' %>" <%= existing && existing.locked ? 'disabled' : '' %>></div>
+    </div>
+
+    <div style="background:linear-gradient(135deg,#fdf2f8,#fce7f3);padding:12px 16px;border-radius:8px;margin:20px 0 16px;">
+      <h3 style="font-size:14px;font-weight:700;color:#9d174d;">Children</h3>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <tr><th>No.</th><th>Name</th><th>Age</th><th>Birth Certificate / Notification Number</th></tr>
+        <% for (let i = 1; i <= 4; i++) { %>
+        <tr>
+          <td><%= i %></td>
+          <td><input name="children_name_<%= i %>" value="<%= formData['children_name_'+i] || '' %>" style="width:100%;border:none;background:transparent;padding:6px;color:var(--text);" <%= existing && existing.locked ? 'disabled' : '' %>></td>
+          <td><input name="children_age_<%= i %>" value="<%= formData['children_age_'+i] || '' %>" style="width:60px;border:none;background:transparent;padding:6px;color:var(--text);" <%= existing && existing.locked ? 'disabled' : '' %>></td>
+          <td><input name="children_cert_<%= i %>" value="<%= formData['children_cert_'+i] || '' %>" style="width:100%;border:none;background:transparent;padding:6px;color:var(--text);" <%= existing && existing.locked ? 'disabled' : '' %>></td>
+        </tr>
+        <% } %>
+      </table>
+    </div>
+    <input type="hidden" name="children" value="<%= formData.children || '' %>">
+
+    <div style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);padding:12px 16px;border-radius:8px;margin:20px 0 16px;">
+      <h3 style="font-size:14px;font-weight:700;color:#166534;">F) Next of Kin</h3>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Name</label><input name="next_of_kin_name" value="<%= formData.next_of_kin_name || '' %>" <%= existing && existing.locked ? 'disabled' : '' %> required></div>
+      <div class="form-group"><label>Phone Number</label><input name="next_of_kin_phone" value="<%= formData.next_of_kin_phone || '' %>" <%= existing && existing.locked ? 'disabled' : '' %> required></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>ID Number</label><input name="next_of_kin_id" value="<%= formData.next_of_kin_id || '' %>" <%= existing && existing.locked ? 'disabled' : '' %> required></div>
+      <div class="form-group"><label>Relationship</label><input name="next_of_kin_relationship" value="<%= formData.next_of_kin_relationship || '' %>" <%= existing && existing.locked ? 'disabled' : '' %> required></div>
+    </div>
+
+    <div style="background:linear-gradient(135deg,#eff6ff,#dbeafe);padding:12px 16px;border-radius:8px;margin:20px 0 16px;">
+      <h3 style="font-size:14px;font-weight:700;color:#1e40af;">G) Parents</h3>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <tr><th>No.</th><th>Name</th><th>Phone Number</th><th>ID Number (Optional)</th></tr>
+        <% for (let i = 1; i <= 2; i++) { %>
+        <tr>
+          <td><%= i %></td>
+          <td><input name="parent_name_<%= i %>" value="<%= formData['parent_name_'+i] || '' %>" style="width:100%;border:none;background:transparent;padding:6px;color:var(--text);" <%= existing && existing.locked ? 'disabled' : '' %>></td>
+          <td><input name="parent_phone_<%= i %>" value="<%= formData['parent_phone_'+i] || '' %>" style="width:100%;border:none;background:transparent;padding:6px;color:var(--text);" <%= existing && existing.locked ? 'disabled' : '' %>></td>
+          <td><input name="parent_id_<%= i %>" value="<%= formData['parent_id_'+i] || '' %>" style="width:100%;border:none;background:transparent;padding:6px;color:var(--text);" <%= existing && existing.locked ? 'disabled' : '' %>></td>
+        </tr>
+        <% } %>
+      </table>
+    </div>
+    <input type="hidden" name="parents" value="<%= formData.parents || '' %>">
+
+    <div style="background:linear-gradient(135deg,#fef3c7,#fde68a);padding:12px 16px;border-radius:8px;margin:20px 0 16px;">
+      <h3 style="font-size:14px;font-weight:700;color:#92400e;">H) In-Laws</h3>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <tr><th>No.</th><th>Name</th><th>Phone Number</th><th>ID Number (Optional)</th></tr>
+        <% for (let i = 1; i <= 2; i++) { %>
+        <tr>
+          <td><%= i %></td>
+          <td><input name="inlaw_name_<%= i %>" value="<%= formData['inlaw_name_'+i] || '' %>" style="width:100%;border:none;background:transparent;padding:6px;color:var(--text);" <%= existing && existing.locked ? 'disabled' : '' %>></td>
+          <td><input name="inlaw_phone_<%= i %>" value="<%= formData['inlaw_phone_'+i] || '' %>" style="width:100%;border:none;background:transparent;padding:6px;color:var(--text);" <%= existing && existing.locked ? 'disabled' : '' %>></td>
+          <td><input name="inlaw_id_<%= i %>" value="<%= formData['inlaw_id_'+i] || '' %>" style="width:100%;border:none;background:transparent;padding:6px;color:var(--text);" <%= existing && existing.locked ? 'disabled' : '' %>></td>
+        </tr>
+        <% } %>
+      </table>
+    </div>
+    <input type="hidden" name="in_laws" value="<%= formData.in_laws || '' %>">
+  </div>
+
+  <div class="card" style="border-top:4px solid #22c55e;text-align:center;">
+    <div class="card-header"><h2 style="color:#22c55e;">Member Declaration</h2></div>
+    <p style="font-size:14px;color:var(--text-muted);margin-bottom:16px;font-style:italic;">I hereby declare that the information provided above is true and correct to the best of my knowledge.</p>
+    <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;">
+      <span style="font-size:14px;padding:8px 16px;background:#f8fafc;border-radius:8px;"><strong>Name:</strong> <%= formData.first_name || '______________' %> <%= formData.surname || '' %></span>
+      <span style="font-size:14px;padding:8px 16px;background:#f8fafc;border-radius:8px;"><strong>Date:</strong> <%= new Date().toLocaleDateString() %></span>
+    </div>
+  </div>
+
+  <% if (!existing || !existing.locked) { %>
+  <div style="display:flex;gap:12px;margin-top:20px;justify-content:center;">
+    <button type="submit" class="btn btn-primary btn-lg" style="padding:14px 32px;border-radius:12px;font-size:15px;background:linear-gradient(135deg,#3b82f6,#2563eb);">💾 Save Draft</button>
+    <% if (existing && existing.form_data) { %>
+    <button type="button" class="btn btn-success btn-lg" style="padding:14px 32px;border-radius:12px;font-size:15px;background:linear-gradient(135deg,#22c55e,#16a34a);" onclick="submitForm()">📋 Submit Form</button>
+    <% } %>
+  </div>
+  <% } %>
+</form>
+
+<form method="POST" action="/member/welfare/register/submit" id="submitForm" style="display:none;"></form>
+
+<% if (existing && existing.locked) { %>
+<div class="card" style="margin-top:20px;border-top:4px solid #f59e0b;">
+  <div class="card-header"><h2 style="color:#f59e0b;">2.0 FOR OFFICIAL USE ONLY</h2></div>
+  <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;">
+    <span style="font-size:14px;padding:8px 16px;background:#fffbeb;border-radius:8px;"><strong>Registration Number:</strong> <%= formData.reg_number || '______________' %></span>
+    <span style="font-size:14px;padding:8px 16px;background:#fffbeb;border-radius:8px;"><strong>Submitted:</strong> <%= new Date(existing.submitted_at).toLocaleDateString() %></span>
+  </div>
+</div>
+
+<div style="margin-top:20px;text-align:center;">
+  <button class="btn btn-primary btn-lg" onclick="window.print()" style="padding:14px 40px;border-radius:12px;font-size:16px;background:linear-gradient(135deg,#3b82f6,#7c3aed);">📄 Download PDF</button>
+</div>
+<% } %>
+
+<script>
+function submitForm() {
+  if (confirm('Submit this form? It will be locked and no further edits are possible without admin approval.')) {
+    document.getElementById('submitForm').submit();
+  }
+}
+</script>
+
+<style>
+@media print {
+  .navbar, .btn, form button, .alert { display: none !important; }
+  .card { break-inside: avoid; box-shadow: none !important; border: 1px solid #ccc !important; }
+  .card:hover { box-shadow: none !important; }
+  body { background: #fff !important; }
+  .container { max-width: 100%; padding: 0 !important; }
+}
+</style>

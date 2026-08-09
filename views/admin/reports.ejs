@@ -1,0 +1,66 @@
+<% header('Reports & Analytics'); %>
+<div class="page-title">Reports & Analytics</div>
+<p class="page-subtitle">System-wide financial overview and breakdowns</p>
+
+<div class="card">
+  <div class="card-header"><h2>Fund Balances</h2></div>
+  <div class="grid">
+    <% 
+      const fundColorMap = { Welfare: '#ef4444', Savings: '#3b82f6', Loans: '#8b5cf6', Development: '#22c55e' };
+      const fundIconMap = { Welfare: '🛡️', Savings: '💰', Loans: '🏦', Development: '📈' };
+    %>
+    <% fundBalances.forEach(f => { %>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:<%= (fundColorMap[f.name] || '#64748b') %>20;color:<%= fundColorMap[f.name] || '#64748b' %>;"><%= fundIconMap[f.name] || '📊' %></div>
+        <div class="stat-value">KES <%= Number(f.total).toLocaleString() %></div>
+        <div class="stat-label"><%= f.name %></div>
+        <div class="stat-bar"><div class="stat-bar-fill" style="width:80%;background:<%= fundColorMap[f.name] || '#64748b' %>;"></div></div>
+</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+  <a href="/export/contributions" class="btn btn-sm btn-outline" target="_blank">📥 Export Contributions CSV</a>
+  <a href="/export/loans" class="btn btn-sm btn-outline" target="_blank">📥 Export Loans CSV</a>
+  <a href="/export/fines" class="btn btn-sm btn-outline" target="_blank">📥 Export Fines CSV</a>
+  <a href="/export/member_balances" class="btn btn-sm btn-outline" target="_blank">📥 Export Balances CSV</a>
+  <a href="/export/payment_requests" class="btn btn-sm btn-outline" target="_blank">📥 Export Payments CSV</a>
+</div>
+    <% }) %>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2>Member Balances Breakdown</h2></div>
+  <div class="table-wrap">
+    <table>
+      <tr><th>#</th><th>Member</th><th style="text-align:right">Welfare</th><th style="text-align:right">Savings</th><th style="text-align:right">Loan Fund</th><th style="text-align:right">Development</th><th style="text-align:right">Total</th></tr>
+      <% memberBalances.forEach(m => { %>
+        <tr>
+          <td><span class="badge badge-closed"><%= m.member_number %></span></td>
+          <td><strong><%= m.first_name %> <%= m.last_name %></strong></td>
+          <td style="text-align:right;">KES <%= Number(m.welfare).toLocaleString() %></td>
+          <td style="text-align:right;">KES <%= Number(m.savings).toLocaleString() %></td>
+          <td style="text-align:right;">KES <%= Number(m.loan_fund).toLocaleString() %></td>
+          <td style="text-align:right;">KES <%= Number(m.development).toLocaleString() %></td>
+          <td style="text-align:right;font-weight:800;">KES <%= Number(m.total).toLocaleString() %></td>
+        </tr>
+      <% }) %>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2>Cycle Summary</h2></div>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Cycle</th><th>Start</th><th>End</th><th style="text-align:right">Contributing Members</th><th style="text-align:right">Total Collected</th></tr>
+      <% cycleContributions.forEach(c => { %>
+        <tr>
+          <td><span class="badge badge-closed">#<%= c.cycle_id %></span></td>
+          <td><%= c.start_date %></td>
+          <td><%= c.end_date %></td>
+          <td style="text-align:right;"><strong><%= c.contributing_members %></strong> / 25</td>
+          <td style="text-align:right;font-weight:700;">KES <%= Number(c.total_contributions).toLocaleString() %></td>
+        </tr>
+      <% }) %>
+    </table>
+  </div>
+</div>

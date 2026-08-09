@@ -1,0 +1,61 @@
+<% header('My Profile'); %>
+<div class="page-title">My Profile</div>
+<p class="page-subtitle"><%= member.member_number %> — Manage your details</p>
+
+<% if (typeof updated !== 'undefined' && updated) { %><div class="alert alert-success"><span class="alert-icon">✅</span><span>Profile updated!</span></div><% } %>
+<% if (success) { %><div class="alert alert-success"><span class="alert-icon">✅</span><span><%= success %></span></div><% } %>
+<% if (error) { %><div class="alert alert-error"><span class="alert-icon">❌</span><span><%= error %></span></div><% } %>
+
+<div class="grid" style="grid-template-columns:repeat(3,1fr);">
+  <div class="stat-card"><div class="stat-icon" style="background:#eff6ff;color:#3b82f6;">👤</div><div class="stat-value"><%= member.first_name %> <%= member.last_name %></div><div class="stat-label">Full Name</div></div>
+  <div class="stat-card"><div class="stat-icon" style="background:#f0fdf4;color:#22c55e;">📊</div><div class="stat-value">KES <%= Number(totalContributions).toLocaleString() %></div><div class="stat-label">Total Approved Contributions</div></div>
+  <div class="stat-card"><div class="stat-icon" style="background:#fef3c7;color:#f59e0b;">🏦</div><div class="stat-value">KES <%= Number(totalActiveLoan).toLocaleString() %></div><div class="stat-label">Active Loan Balance</div></div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2>Edit Profile</h2></div>
+  <form method="POST" action="/profile">
+    <div class="form-row">
+      <div class="form-group"><label>First Name</label><input name="first_name" value="<%= member.first_name %>" required></div>
+      <div class="form-group"><label>Last Name</label><input name="last_name" value="<%= member.last_name %>" required></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Phone</label><input name="phone" value="<%= member.phone || '' %>" placeholder="+254 XXX XXX XXX"></div>
+    </div>
+    <button class="btn btn-primary">Save Changes</button>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2>Change Password</h2></div>
+  <form method="POST" action="/profile/password">
+    <div class="form-row">
+      <div class="form-group" style="position:relative;"><label>Current Password</label><input type="password" id="cp_old" name="current_password" required><span class="pwd-toggle" onclick="togglePwd('cp_old',this)" style="position:absolute;right:12px;top:38px;cursor:pointer;font-size:14px;color:#94a3b8;user-select:none;">👁️</span></div>
+      <div class="form-group" style="position:relative;"><label>New Password</label><input type="password" id="cp_new" name="new_password" required minlength="6"><span class="pwd-toggle" onclick="togglePwd('cp_new',this)" style="position:absolute;right:12px;top:38px;cursor:pointer;font-size:14px;color:#94a3b8;user-select:none;">👁️</span></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group" style="position:relative;"><label>Confirm New Password</label><input type="password" id="cp_confirm" name="confirm_password" required minlength="6"><span class="pwd-toggle" onclick="togglePwd('cp_confirm',this)" style="position:absolute;right:12px;top:38px;cursor:pointer;font-size:14px;color:#94a3b8;user-select:none;">👁️</span></div>
+    </div>
+    <button class="btn btn-primary">Update Password</button>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2>Account Balances</h2></div>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Fund</th><th style="text-align:right">Balance</th></tr>
+      <% funds.forEach(f => { %>
+        <tr><td><%= f.name %></td><td style="text-align:right;font-weight:700;">KES <%= Number(f.balance).toLocaleString() %></td></tr>
+      <% }) %>
+    </table>
+  </div>
+</div>
+
+<script>
+function togglePwd(id, el) {
+  var inp = document.getElementById(id);
+  if (inp.type === 'password') { inp.type = 'text'; el.textContent = '🙈'; }
+  else { inp.type = 'password'; el.textContent = '👁️'; }
+}
+</script>

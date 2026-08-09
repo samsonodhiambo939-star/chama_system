@@ -1,0 +1,84 @@
+<% header('Welfare Request'); %>
+<div class="page-title">Welfare Support</div>
+<p class="page-subtitle">Request emergency welfare assistance for sickness, death, or other urgent needs</p>
+
+<% if (error) { %><div class="alert alert-error"><span class="alert-icon">❌</span><%= error %></div><% } %>
+<% if (message) { %><div class="alert alert-success"><span class="alert-icon">✅</span><%= message %></div><% } %>
+<% if (success) { %><div class="alert alert-success"><span class="alert-icon">✅</span>Welfare request submitted successfully. The welfare officer will review it.</div><% } %>
+
+<div class="card">
+  <div class="card-header"><h2>Your Welfare Balance</h2></div>
+  <div style="font-size:32px;font-weight:800;color:#3b82f6;">KES <%= Number(balance).toLocaleString() %></div>
+  <p class="text-sm text-muted">Available welfare fund balance</p>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2>Submit Welfare Request</h2></div>
+  <form method="POST" action="/member/welfare">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Amount Needed (KES)</label>
+        <input type="number" name="amount" min="1" max="1000000" step="1" class="input-lg" required placeholder="e.g. 5000">
+      </div>
+      <div class="form-group">
+        <label>Reason for Request</label>
+        <select name="reason" required class="input-lg">
+          <option value="">Select reason...</option>
+          <option value="sickness">Sickness / Medical</option>
+          <option value="death">Death / Funeral</option>
+          <option value="emergency">Emergency</option>
+          <option value="education">Education</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Beneficiary Full Name</label>
+        <input type="text" name="beneficiary_name" required placeholder="Full name of person being helped">
+      </div>
+      <div class="form-group">
+        <label>Beneficiary ID Number</label>
+        <input type="text" name="beneficiary_id_number" required placeholder="National ID / Passport">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Relationship to Beneficiary</label>
+        <input type="text" name="relationship" required placeholder="e.g. Self, Spouse, Child, Parent, Sibling">
+      </div>
+      <div class="form-group">
+        <label>Amount (KES)</label>
+        <input type="number" value="<%= Number(balance).toLocaleString() %>" disabled style="padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:var(--input-bg);color:var(--text-muted);width:100%;">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Additional Description (Optional)</label>
+      <textarea name="description" rows="3" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:var(--input-bg);color:var(--text);" placeholder="Provide any additional details about the situation..."></textarea>
+    </div>
+    <button class="btn btn-primary btn-lg btn-full-mobile" style="margin-top:8px;">Submit Welfare Request</button>
+    <p class="text-xs text-muted mt-16">The welfare officer will review and approve your request. Funds will be deducted from the welfare fund.</p>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2>Your Welfare Requests</h2></div>
+  <% if (requests.length === 0) { %>
+    <div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">No welfare requests yet.</div></div>
+  <% } else { %>
+    <div class="table-wrap">
+      <table>
+        <tr><th>Amount</th><th>Reason</th><th>Beneficiary</th><th>Status</th><th>Date</th></tr>
+        <% requests.forEach(r => { %>
+          <tr>
+            <td style="font-weight:700;">KES <%= Number(r.amount).toLocaleString() %></td>
+            <td><%= r.reason %></td>
+            <td><%= r.beneficiary_name %></td>
+            <td><span class="badge badge-<%= r.status %>"><%= r.status %></span></td>
+            <td class="text-sm"><%= new Date(r.created_at).toLocaleDateString() %></td>
+          </tr>
+        <% }) %>
+      </table>
+    </div>
+  <% } %>
+</div>

@@ -1,0 +1,33 @@
+<% header('Withdraw Funds'); %>
+<div class="page-title">Withdraw Funds</div>
+<p class="page-subtitle">Request to withdraw from your savings or other funds</p>
+
+<div class="card">
+  <div class="card-header"><h2>New Withdrawal Request</h2></div>
+  <form method="POST" action="/withdraw">
+    <div class="form-row">
+      <div class="form-group"><label>Fund</label><select name="fund_type_id" required><% funds.forEach(f => { %><option value="<%= f.id %>"><%= f.name %> (KES <%= Number(f.balance).toLocaleString() %>)</option><% }) %></select></div>
+      <div class="form-group"><label>Amount (KES)</label><input type="number" name="amount" min="1" step="1" required placeholder="Enter amount"></div>
+      <div class="form-group" style="display:flex;align-items:flex-end;"><button class="btn btn-warning">Submit Request</button></div>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2>My Withdrawal Requests</h2></div>
+  <% if (requests.length === 0) { %>
+    <div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">No withdrawal requests yet.</div></div>
+  <% } else { %>
+    <div class="table-wrap">
+      <table>
+        <tr><th>Fund</th><th style="text-align:right">Amount</th><th>Status</th><th>Requested</th></tr>
+        <% requests.forEach(r => { %>
+          <tr>
+            <td><%= r.fund_name %></td><td style="text-align:right;font-weight:700;">KES <%= Number(r.amount).toLocaleString() %></td>
+            <td><span class="badge badge-<%= r.status %>"><%= r.status %></span></td><td class="text-sm"><%= new Date(r.created_at).toLocaleDateString() %></td>
+          </tr>
+        <% }) %>
+      </table>
+    </div>
+  <% } %>
+</div>

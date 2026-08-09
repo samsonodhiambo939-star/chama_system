@@ -1,0 +1,115 @@
+<% header('My Statement'); %>
+<div class="page-title">My Statement</div>
+<p class="page-subtitle"><%= member.first_name %> <%= member.last_name %> — <%= member.member_number %></p>
+
+<div style="text-align:right;margin-bottom:16px;">
+  <button class="btn btn-outline" onclick="window.print()">🖨️ Print</button>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2>Account Balances</h2></div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;">
+    <% balances.forEach(function(b) { %>
+      <div style="background:var(--hover);border-radius:10px;padding:14px;text-align:center;">
+        <div style="font-size:12px;color:var(--text-muted);font-weight:600;text-transform:uppercase;"><%= b.name %></div>
+        <div style="font-size:20px;font-weight:800;margin-top:4px;">KES <%= Number(b.balance).toLocaleString() %></div>
+      </div>
+    <% }) %>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2>Contribution History</h2></div>
+  <% if (contributions.length === 0) { %>
+    <div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">No contributions yet.</div></div>
+  <% } else { %>
+    <div class="table-wrap">
+      <table>
+        <tr><th>Date</th><th>Fund</th><th style="text-align:right">Amount</th><th>Cycle</th><th>Status</th></tr>
+        <% contributions.forEach(function(c) { %>
+          <tr>
+            <td><%= new Date(c.created_at).toLocaleDateString() %></td>
+            <td><%= c.fund %></td>
+            <td style="text-align:right;font-weight:700;">KES <%= Number(c.amount).toLocaleString() %></td>
+            <td class="text-xs text-muted"><%= c.start_date %> to <%= c.end_date %></td>
+            <td><span class="badge badge-<%= c.status %>"><%= c.status %></span></td>
+          </tr>
+        <% }) %>
+      </table>
+    </div>
+    <div style="margin-top:12px;text-align:right;font-weight:700;font-size:16px;padding:12px;background:var(--hover);border-radius:8px;">
+      Total Contributions: KES <%= totalContributions.toLocaleString() %>
+    </div>
+  <% } %>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2>Loan History</h2></div>
+  <% if (loans.length === 0) { %>
+    <div class="empty-state"><div class="empty-icon">🏦</div><div class="empty-text">No loans taken.</div></div>
+  <% } else { %>
+    <div class="table-wrap">
+      <table>
+        <tr><th>Issued</th><th style="text-align:right">Amount</th><th style="text-align:right">Paid</th><th style="text-align:right">Due</th><th>Status</th></tr>
+        <% loans.forEach(function(l) { %>
+          <tr>
+            <td><%= l.issued_date ? new Date(l.issued_date).toLocaleDateString() : '—' %></td>
+            <td style="text-align:right;font-weight:700;">KES <%= Number(l.amount).toLocaleString() %></td>
+            <td style="text-align:right;">KES <%= Number(l.paid_amount).toLocaleString() %></td>
+            <td style="text-align:right;">KES <%= Number(Math.max(l.amount_due - l.paid_amount, 0)).toLocaleString() %></td>
+            <td><span class="badge badge-<%= l.status %>"><%= l.status %></span></td>
+          </tr>
+        <% }) %>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2>Fines & Penalties</h2></div>
+  <% if (fines.length === 0) { %>
+    <div class="empty-state"><div class="empty-icon">⚖️</div><div class="empty-text">No fines recorded.</div></div>
+  <% } else { %>
+    <div class="table-wrap">
+      <table>
+        <tr><th>Date</th><th>Reason</th><th style="text-align:right">Amount</th><th style="text-align:right">Balance</th><th>Status</th></tr>
+        <% fines.forEach(function(f) { %>
+          <tr>
+            <td><%= new Date(f.created_at).toLocaleDateString() %></td>
+            <td><%= f.reason %></td>
+            <td style="text-align:right;font-weight:700;">KES <%= Number(f.amount).toLocaleString() %></td>
+            <td style="text-align:right;">KES <%= Number(f.balance).toLocaleString() %></td>
+            <td><span class="badge badge-<%= f.status %>"><%= f.status %></span></td>
+          </tr>
+        <% }) %>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2>Withdrawals</h2></div>
+  <% if (withdrawals.length === 0) { %>
+    <div class="empty-state"><div class="empty-icon">💸</div><div class="empty-text">No withdrawals made.</div></div>
+  <% } else { %>
+    <div class="table-wrap">
+      <table>
+        <tr><th>Date</th><th>Fund</th><th style="text-align:right">Amount</th><th>Status</th></tr>
+        <% withdrawals.forEach(function(w) { %>
+          <tr>
+            <td><%= new Date(w.created_at).toLocaleDateString() %></td>
+            <td><%= w.fund_name %></td>
+            <td style="text-align:right;font-weight:700;">KES <%= Number(w.amount).toLocaleString() %></td>
+            <td><span class="badge badge-<%= w.status %>"><%= w.status %></span></td>
+          </tr>
+        <% }) %>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<style media="print">
+  .navbar, .btn, .page-subtitle, footer { display: none !important; }
+  .card { break-inside: avoid; box-shadow: none; border: 1px solid #ddd; }
+  body { background: #fff; }
+</style>

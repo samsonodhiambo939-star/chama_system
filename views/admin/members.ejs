@@ -1,0 +1,138 @@
+<% header('Manage Members'); %>
+<div class="flex mb-16">
+  <div><div class="page-title" style="margin-bottom:4px;">Members</div><p class="text-muted text-sm">Manage all registered members and their accounts</p></div>
+  <button class="btn btn-primary btn-lg" onclick="document.getElementById('addForm').style.display='block'" style="flex-shrink:0;">+ Add Member</button>
+</div>
+
+<% if (error) { %><div class="alert alert-error"><span class="alert-icon">❌</span><%= error %></div><% } %>
+<% if (message) { %><div class="alert alert-success"><span class="alert-icon">✅</span><%= message %></div><% } %>
+
+<div id="addForm" style="display:none;" class="card">
+  <div class="card-header"><h3>Add New Member</h3></div>
+  <form method="POST" action="/admin/members/add">
+    <div class="form-row">
+      <div class="form-group"><label>First Name</label><input name="first_name" required></div>
+      <div class="form-group"><label>Last Name</label><input name="last_name" required></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Phone (optional)</label><input name="phone"></div>
+      <div class="form-group"><label>Username</label><input name="username" required></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Password</label><input type="text" name="password" required></div>
+      <div class="form-group" style="display:flex;align-items:flex-end;gap:8px;">
+        <button class="btn btn-primary">Add Member</button>
+        <button type="button" class="btn btn-outline" onclick="document.getElementById('addForm').style.display='none'">Cancel</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <h3>All Members</h3>
+    <input id="memberSearch" placeholder="Search members..." style="padding:8px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;width:280px;max-width:100%;background:var(--input-bg);color:var(--text);">
+  </div>
+  <div class="table-wrap">
+      <table>
+        <tr><th>#</th><th>Photo</th><th>Name</th><th>Phone</th><th>Username</th><th style="text-align:right">Balance</th><th>Status</th><th>📍</th><th>Actions</th></tr>
+        <% members.forEach(m => { %>
+          <tr>
+            <td><span class="badge badge-closed"><%= m.member_number %></span></td>
+            <td>
+              <% if (m.photo) { %>
+                <img src="<%= m.photo %>" alt="photo" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid var(--border);">
+                <form method="POST" action="/admin/members/photo/remove/<%= m.id %>" style="display:inline;"><button class="btn btn-sm btn-danger" style="padding:2px 6px;font-size:9px;">✕</button></form>
+              <% } else { %>
+                <button class="btn btn-sm btn-outline" onclick="uploadPhoto(<%= m.id %>, '<%= m.first_name %> <%= m.last_name %>')" style="font-size:10px;">+ Photo</button>
+              <% } %>
+            </td>
+            <td><strong><%= m.first_name %> <%= m.last_name %></strong></td>
+            <td class="text-muted"><%= m.phone || '—' %></td>
+            <td class="font-mono"><%= m.username || '—' %></td>
+            <td style="text-align:right;font-weight:700;">KES <%= Number(m.total_balance || 0).toLocaleString() %></td>
+            <td><span class="badge <%= m.is_active ? 'badge-active' : 'badge-closed' %>"><%= m.is_active ? 'Active' : 'Inactive' %></span></td>
+            <td><span class="badge <%= m.outside_nairobi ? 'badge-warning' : 'badge-closed' %>"><%= m.outside_nairobi ? '📍Yes' : '—' %></span></td>
+            <td>
+              <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+                <a href="/admin/members/<%= m.id %>/contributions" class="btn btn-sm btn-outline">View</a>
+                <% if (m.outside_nairobi) { %><a href="/admin/members/outside-nairobi/remove/<%= m.id %>" class="btn btn-sm btn-outline" style="color:#22c55e;">📍 Remove</a><% } else { %><a href="/admin/members/outside-nairobi/set/<%= m.id %>" class="btn btn-sm btn-outline" style="color:#f59e0b;">📍 Set Outside</a><% } %>
+                <form method="POST" action="/admin/members/reset-password/<%= m.id %>" style="display:flex;gap:6px;align-items:center;">
+                  <input type="text" name="password" placeholder="New password" style="padding:6px 10px;border:1.5px solid #e2e8f0;border-radius:6px;font-size:12px;width:110px;" required>
+                  <button class="btn btn-primary btn-sm">Reset</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        <% }) %>
+      </table>
+  </div>
+</div>
+
+<!-- Photo upload modal -->
+<div class="modal-overlay" id="photoModal">
+  <div class="modal" style="text-align:center;">
+    <h3>Upload Photo</h3>
+    <p id="photoMemberName" class="text-muted text-sm mb-16"></p>
+    <div style="margin:16px 0;">
+      <img id="photoPreview" style="width:120px;height:120px;border-radius:50%;object-fit:cover;border:3px solid var(--border);display:none;">
+    </div>
+    <input type="file" id="photoInput" accept="image/*" style="margin:12px 0;">
+    <div style="display:flex;gap:12px;justify-content:center;margin-top:16px;">
+      <button class="btn btn-primary" id="photoSaveBtn" onclick="savePhoto()">Save</button>
+      <button class="btn btn-outline" onclick="closePhotoModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  if (window.location.hash === '#add') document.getElementById('addForm').style.display = 'block';
+  document.getElementById('memberSearch').addEventListener('input', function(){
+    var v = this.value.toLowerCase();
+    document.querySelectorAll('.card table tr').forEach(function(tr,i){
+      if(i===0) return;
+      tr.style.display = tr.textContent.toLowerCase().includes(v) ? '' : 'none';
+    });
+  });
+
+  var photoMemberId = null;
+  function uploadPhoto(id, name) {
+    photoMemberId = id;
+    document.getElementById('photoMemberName').textContent = name;
+    document.getElementById('photoPreview').style.display = 'none';
+    document.getElementById('photoInput').value = '';
+    document.getElementById('photoModal').classList.add('active');
+  }
+  function closePhotoModal() { document.getElementById('photoModal').classList.remove('active'); photoMemberId = null; }
+
+  document.getElementById('photoInput').addEventListener('change', function(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      var img = document.getElementById('photoPreview');
+      img.src = ev.target.result;
+      img.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  });
+
+  function savePhoto() {
+    var input = document.getElementById('photoInput');
+    if (!input.files[0]) return alert('Select a photo first');
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      var form = document.createElement('form');
+      form.method = 'POST';
+      form.action = '/admin/members/photo/' + photoMemberId;
+      var input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'photo';
+      input.value = ev.target.result;
+      form.appendChild(input);
+      document.body.appendChild(form);
+      form.submit();
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+</script>

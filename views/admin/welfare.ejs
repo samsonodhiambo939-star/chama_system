@@ -1,0 +1,60 @@
+<% header('Welfare Requests'); %>
+<div class="page-title">Welfare Requests</div>
+<p class="page-subtitle">Review and approve member welfare support requests (Welfare Officer)</p>
+
+<% if (error === 'insufficient') { %><div class="alert alert-error"><span class="alert-icon">❌</span>Insufficient welfare fund balance to approve this request.</div><% } %>
+
+<div class="card">
+  <div class="card-header"><h2>Pending Welfare Requests</h2></div>
+  <% if (requests.filter(r => r.status === 'pending').length === 0) { %>
+    <div class="alert alert-success"><span class="alert-icon">✅</span>No pending welfare requests.</div>
+  <% } else { %>
+    <div class="table-wrap">
+      <table>
+        <tr><th>Member</th><th style="text-align:right">Amount</th><th>Reason</th><th>Beneficiary</th><th>ID Number</th><th>Relationship</th><th>Date</th><th>Actions</th></tr>
+        <% requests.filter(r => r.status === 'pending').forEach(r => { %>
+          <tr>
+            <td><strong><%= r.first_name %> <%= r.last_name %></strong><br><span class="text-xs text-muted"><%= r.member_number %></span></td>
+            <td style="text-align:right;font-weight:700;">KES <%= Number(r.amount).toLocaleString() %></td>
+            <td><%= r.reason %></td>
+            <td><%= r.beneficiary_name %></td>
+            <td class="text-xs font-mono"><%= r.beneficiary_id_number %></td>
+            <td><%= r.relationship %></td>
+            <td class="text-sm"><%= new Date(r.created_at).toLocaleDateString() %></td>
+            <td style="white-space:nowrap;">
+              <form method="POST" action="/admin/welfare/approve/<%= r.id %>" style="display:inline;">
+                <button class="btn btn-success btn-sm">Approve</button>
+              </form>
+              <form method="POST" action="/admin/welfare/reject/<%= r.id %>" style="display:inline;" onsubmit="event.preventDefault();confirmAction('Reject this welfare request?',function(){this.submit()}.bind(this))">
+                <button class="btn btn-danger btn-sm">Reject</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2>Request History</h2></div>
+  <% if (requests.length === 0) { %>
+    <div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">No requests yet.</div></div>
+  <% } else { %>
+    <div class="table-wrap">
+      <table>
+        <tr><th>Member</th><th style="text-align:right">Amount</th><th>Reason</th><th>Beneficiary</th><th>Status</th><th>Date</th></tr>
+        <% requests.forEach(r => { %>
+          <tr>
+            <td><%= r.first_name %> <%= r.last_name %></td>
+            <td style="text-align:right;font-weight:700;">KES <%= Number(r.amount).toLocaleString() %></td>
+            <td><%= r.reason %></td>
+            <td><%= r.beneficiary_name %></td>
+            <td><span class="badge badge-<%= r.status %>"><%= r.status %></span></td>
+            <td class="text-sm"><%= new Date(r.created_at).toLocaleDateString() %></td>
+          </tr>
+        <% }) %>
+      </table>
+    </div>
+  <% } %>
+</div>

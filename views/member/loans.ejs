@@ -1,0 +1,170 @@
+<% header('Loan Management'); %>
+
+<div class="page-title">Loan Management</div>
+<p class="page-subtitle">Check eligibility, apply for loans, and manage repayments</p>
+
+<% if (error) { %><div class="alert alert-error"><span class="alert-icon">❌</span><%= error %></div><% } %>
+
+<div class="card">
+  <div class="card-header"><h2>Loan Eligibility</h2></div>
+  <div class="grid">
+    <div class="stat-card" style="border-color:var(--border);">
+      <div class="stat-icon" style="background:#eff6ff;color:#3b82f6;">💰</div>
+      <div class="stat-value">KES <%= Number(totalQualifying).toLocaleString() %></div>
+      <div class="stat-label">Savings + Development</div>
+    </div>
+    <div class="stat-card" style="border-color:#e2e8f0;">
+      <div class="stat-icon" style="background:#f5f3ff;color:#8b5cf6;">🏦</div>
+      <div class="stat-value">KES <%= Number(maxLoan).toLocaleString() %></div>
+      <div class="stat-label">Maximum Loan (⅔)</div>
+    </div>
+    <div class="stat-card" style="border-color:#e2e8f0;">
+      <div class="stat-icon" style="background:<%= qualifies ? '#f0fdf4' : '#fef2f2' %>;color:<%= qualifies ? '#22c55e' : '#ef4444' %>;"><%= qualifies ? '✅' : '❌' %></div>
+      <div class="stat-value" style="color:<%= qualifies ? '#22c55e' : '#ef4444' %>;"><%= qualifies ? 'Qualified' : 'Not Yet' %></div>
+      <div class="stat-label">Loan Status</div>
+    </div>
+  </div>
+  <% if (!qualifies && !activeLoan && !pendingLoan) { %>
+    <div class="alert alert-warning mt-16">
+      <span class="alert-icon">💡</span>
+      <span>You need <strong>KES 3,000+</strong> in Savings + Development to qualify. Keep contributing!</span>
+    </div>
+  <% } %>
+</div>
+
+<% var loanRemaining = activeLoan ? activeLoan.amount_due - activeLoan.paid_amount : 0; %>
+<% var isDefaulted = activeLoan && activeLoan.status === 'defaulted' && loanRemaining > 0; %>
+
+<% if (pendingLoan) { %>
+  <div class="card">
+    <div class="card-header"><h2>Pending Loan Application</h2></div>
+    <div class="alert alert-warning">
+      <span class="alert-icon">⏳</span>
+      <span style="flex:1">Your loan application of <strong>KES <%= Number(pendingLoan.amount).toLocaleString() %></strong> is awaiting admin approval. You'll be notified once reviewed.</span>
+    </div>
+    <div class="fund-stats-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;">
+      <div><span class="text-xs text-muted">Requested Amount</span><div style="font-size:20px;font-weight:700;">KES <%= Number(pendingLoan.amount).toLocaleString() %></div></div>
+      <div><span class="text-xs text-muted">Interest (on approval)</span><div style="font-size:18px;font-weight:600;">10%</div></div>
+    </div>
+  </div>
+<% } else if (activeLoan) { %>
+  <div class="card" style="<%= isDefaulted ? 'border-left:4px solid #ef4444;' : '' %>">
+    <div class="card-header"><h2 style="<%= isDefaulted ? 'color:#ef4444;' : '' %>"><%= isDefaulted ? 'Defaulted Loan' : 'Active Loan' %></h2></div>
+    <% if (isDefaulted) { %>
+      <div class="alert alert-error">
+        <span class="alert-icon">🚨</span>
+        <span style="flex:1">Your loan is <strong>OVERDUE</strong>! A 10% penalty of <strong>KES <%= Number(activeLoan.defaulted_penalty).toLocaleString() %></strong> has been added. Total due: <strong>KES <%= Number(loanRemaining).toLocaleString() %></strong>.</span>
+      </div>
+    <% } %>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;">
+      <div>
+        <span class="text-xs text-muted">Loan Amount</span>
+        <div style="font-size:24px;font-weight:800;">KES <%= Number(activeLoan.amount).toLocaleString() %></div>
+      </div>
+      <div>
+        <span class="text-xs text-muted">Outstanding</span>
+        <div style="font-size:24px;font-weight:800;color:#ef4444;">KES <%= Number(loanRemaining).toLocaleString() %></div>
+      </div>
+      <div>
+        <span class="text-xs text-muted">Paid So Far</span>
+        <div style="font-size:20px;font-weight:700;color:#22c55e;">KES <%= Number(activeLoan.paid_amount).toLocaleString() %></div>
+      </div>
+      <% if (isDefaulted) { %>
+      <div>
+        <span class="text-xs text-muted">Default Penalty (10%)</span>
+        <div style="font-size:18px;font-weight:700;color:#ef4444;">KES <%= Number(activeLoan.defaulted_penalty).toLocaleString() %></div>
+      </div>
+      <% } %>
+      <div>
+        <span class="text-xs text-muted">Interest Rate</span>
+        <div style="font-size:18px;font-weight:600;"><%= activeLoan.interest_rate %>%</div>
+      </div>
+      <div>
+        <span class="text-xs text-muted">Issue Date</span>
+        <div><%= activeLoan.issued_date %></div>
+      </div>
+      <div>
+        <span class="text-xs text-muted">Due Date</span>
+        <div><%= activeLoan.due_date %></div>
+      </div>
+    </div>
+
+    <div class="mt-20" style="border-top:1px solid var(--border);padding-top:20px;">
+      <h3 style="font-size:16px;font-weight:700;margin-bottom:12px;">Repay Loan</h3>
+      <form method="POST" action="/member/loans/repay" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="form-group" style="margin-bottom:0;flex:1;min-width:160px;">
+          <label>Repayment Amount (KES)</label>
+          <input type="number" name="repay_amount" min="1" max="<%= loanRemaining %>" step="1" class="input-lg" required placeholder="Enter amount">
+        </div>
+        <button class="btn btn-success btn-full-mobile" style="flex-shrink:0;">Repay Now</button>
+        <span class="text-xs text-muted" style="padding-bottom:8px;">External repayment — savings not affected</span>
+      </form>
+    </div>
+  </div>
+<% } else if (!pendingLoan && qualifies) { %>
+  <div class="card">
+    <div class="card-header"><h2>Apply for Loan</h2></div>
+    <p class="text-muted mb-16">You can borrow up to <strong>KES <%= Number(maxLoan).toLocaleString() %></strong> (⅔ of your KES <%= Number(totalQualifying).toLocaleString() %> savings + development).</p>
+    <form method="POST" action="/member/loans/apply">
+      <div class="form-row">
+        <div class="form-group" style="max-width:250px;flex:1;">
+          <label>Loan Amount (KES)</label>
+          <input type="number" name="amount" min="1" max="<%= maxLoan %>" step="1" class="input-lg" required placeholder="e.g. 5000">
+        </div>
+        <div class="form-group" style="display:flex;align-items:flex-end;">
+          <button class="btn btn-success btn-lg btn-full-mobile">Apply for Loan</button>
+        </div>
+      </div>
+      <p class="text-xs text-muted mt-16">Terms: 10% interest applies if overdue beyond 30 days. No collateral required.</p>
+    </form>
+  </div>
+<% } %>
+
+<% if (pastLoans && pastLoans.length > 0) { %>
+  <div class="card">
+    <div class="card-header"><h2>Loan History</h2></div>
+    <div class="table-wrap">
+      <table>
+        <tr><th>Amount</th><th>Amount Due</th><th>Paid</th><th>Issued</th><th>Status</th></tr>
+        <% pastLoans.forEach(l => { %>
+          <tr>
+            <td><strong>KES <%= Number(l.amount).toLocaleString() %></strong></td>
+            <td>KES <%= Number(l.amount_due).toLocaleString() %></td>
+            <td>KES <%= Number(l.paid_amount).toLocaleString() %></td>
+            <td><%= l.issued_date %></td>
+            <td><span class="badge badge-<%= l.status %>"><%= l.status %></span></td>
+          </tr>
+        <% }) %>
+      </table>
+    </div>
+  </div>
+<% } %>
+
+<% if (defaultedLoans && defaultedLoans.length > 0) { %>
+  <div class="card" style="border-left:4px solid #ef4444;">
+    <div class="card-header"><h2 style="color:#ef4444;">Defaulted Loans</h2></div>
+    <p class="text-muted" style="margin-bottom:16px;">These loans are overdue. A 10% penalty has been added to each.</p>
+    <div class="table-wrap">
+      <table>
+        <tr>
+          <th>Loan Amount</th>
+          <th>Outstanding</th>
+          <th>Penalty (10%)</th>
+          <th>Total Due</th>
+          <th>Due Date</th>
+          <th>Status</th>
+        </tr>
+        <% defaultedLoans.forEach(function(l) { var rem = l.amount_due - l.paid_amount; var total = rem + l.defaulted_penalty; %>
+          <tr style="background:#fef2f2;">
+            <td><strong>KES <%= Number(l.amount).toLocaleString() %></strong></td>
+            <td style="color:#ef4444;font-weight:700;">KES <%= Number(rem).toLocaleString() %></td>
+            <td style="color:#b91c1c;font-weight:700;">KES <%= Number(l.defaulted_penalty).toLocaleString() %></td>
+            <td style="color:#b91c1c;font-weight:800;">KES <%= Number(total).toLocaleString() %></td>
+            <td><%= l.due_date %></td>
+            <td><span class="badge badge-danger">defaulted</span></td>
+          </tr>
+        <% }); %>
+      </table>
+    </div>
+  </div>
+<% } %>

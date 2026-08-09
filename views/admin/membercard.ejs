@@ -1,0 +1,32 @@
+<% header('Member Card'); %>
+<div class="page-title">Member Card Management</div>
+<p class="page-subtitle">Assign card amounts that members must repay</p>
+
+<div class="card">
+  <div class="card-header"><h3>Assign Card Amount</h3></div>
+  <form method="POST" action="/admin/membercard/assign">
+    <div class="form-row">
+      <div class="form-group"><label>Member</label><select name="member_id" required><% members.forEach(m => { %><option value="<%= m.id %>"><%= m.first_name %> <%= m.last_name %> (<%= m.member_number %>) — Assigned: KES <%= Number(m.assigned).toLocaleString() %> | Paid: KES <%= Number(m.paid).toLocaleString() %></option><% }) %></select></div>
+      <div class="form-group"><label>Amount (KES)</label><input type="number" name="amount" min="1" max="10000000" step="1" required></div>
+      <div class="form-group" style="display:flex;align-items:flex-end;"><button class="btn btn-primary">Assign Amount</button></div>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2>Card Accounts</h2></div>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Member</th><th style="text-align:right">Assigned</th><th style="text-align:right">Paid</th><th style="text-align:right">Balance</th><th>Status</th></tr>
+      <% cards.forEach(c => { %>
+        <tr>
+          <td><strong><%= c.first_name %> <%= c.last_name %></strong><br><span class="text-xs text-muted"><%= c.member_number %></span></td>
+          <td style="text-align:right;font-weight:700;">KES <%= Number(c.assigned_amount).toLocaleString() %></td>
+          <td style="text-align:right;">KES <%= Number(c.paid_amount).toLocaleString() %></td>
+          <td style="text-align:right;font-weight:700;color:<%= (c.assigned_amount - c.paid_amount) > 0 ? '#ef4444' : '#22c55e' %>;">KES <%= Number(c.assigned_amount - c.paid_amount).toLocaleString() %></td>
+          <td><span class="badge <%= (c.assigned_amount - c.paid_amount) <= 0 ? 'badge-paid' : 'badge-active' %>"><%= (c.assigned_amount - c.paid_amount) <= 0 ? 'Settled' : 'Outstanding' %></span></td>
+        </tr>
+      <% }) %>
+    </table>
+  </div>
+</div>

@@ -1,0 +1,83 @@
+<% header('Meeting Attendance'); %>
+<div class="page-title">Meeting Attendance</div>
+<p class="page-subtitle"><%= meeting.title %> — <%= meeting.meeting_date %></p>
+
+<% if (message) { %><div class="alert alert-success"><span class="alert-icon">✅</span><%= message %></div><% } %>
+<% if (error) { %><div class="alert alert-error"><span class="alert-icon">❌</span><%= error %></div><% } %>
+
+<div class="card">
+  <div class="card-header">
+    <h2>Mark Attendance & Violations</h2>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+      <form method="POST" action="/admin/attendance/auto-fine/absentism/<%= meeting.id %>" style="display:inline;" onsubmit="event.preventDefault();confirmAction('Fine all absent members KES 150 each?',function(){this.submit()}.bind(this))">
+        <button class="btn btn-warning btn-sm">⚡ Absentism (KES 150)</button>
+      </form>
+      <form method="POST" action="/admin/attendance/auto-fine/lateness/<%= meeting.id %>" style="display:inline;" onsubmit="event.preventDefault();confirmAction('Fine all late members KES 100 each?',function(){this.submit()}.bind(this))">
+        <button class="btn btn-warning btn-sm">⏰ Lateness (KES 100)</button>
+      </form>
+      <form method="POST" action="/admin/attendance/auto-fine/no_card/<%= meeting.id %>" style="display:inline;" onsubmit="event.preventDefault();confirmAction('Fine members without card KES 300 each?',function(){this.submit()}.bind(this))">
+        <button class="btn btn-warning btn-sm">🪪 No Card (KES 300)</button>
+      </form>
+      <form method="POST" action="/admin/attendance/auto-fine/no_neck_card/<%= meeting.id %>" style="display:inline;" onsubmit="event.preventDefault();confirmAction('Fine members without neck card KES 50 each?',function(){this.submit()}.bind(this))">
+        <button class="btn btn-warning btn-sm">🔖 No Neck Card (KES 50)</button>
+      </form>
+      <form method="POST" action="/admin/attendance/auto-fine/outside_nairobi/<%= meeting.id %>" style="display:inline;" onsubmit="event.preventDefault();confirmAction('Fine absent outside-Nairobi members KES 1000?',function(){this.submit()}.bind(this))">
+        <button class="btn btn-danger btn-sm">🌍 Outside Nairobi (KES 1000)</button>
+      </form>
+    </div>
+  </div>
+  <form method="POST" action="/admin/attendance/save/<%= meeting.id %>">
+    <div class="table-wrap">
+      <table>
+        <tr><th>Member</th><th>Present</th><th>Absent</th><th>Excused</th><th>Late</th><th>No Card</th><th>No Neck</th><th>Outside Nbi</th></tr>
+        <% members.forEach(function(m) { %>
+          <tr>
+            <td><strong><%= m.first_name %> <%= m.last_name %></strong> <span class="text-xs text-muted">(<%= m.member_number %>)</span></td>
+            <td><input type="radio" name="status_<%= m.id %>" value="present" <%= m.attendance_status === 'present' || !m.attendance_status ? 'checked' : '' %>></td>
+            <td><input type="radio" name="status_<%= m.id %>" value="absent" <%= m.attendance_status === 'absent' ? 'checked' : '' %>></td>
+            <td><input type="radio" name="status_<%= m.id %>" value="excused" <%= m.attendance_status === 'excused' ? 'checked' : '' %>></td>
+            <td><input type="checkbox" name="late_<%= m.id %>" value="1" <%= m.late ? 'checked' : '' %>></td>
+            <td><input type="checkbox" name="no_card_<%= m.id %>" value="1" <%= m.no_card ? 'checked' : '' %>></td>
+            <td><input type="checkbox" name="no_neck_card_<%= m.id %>" value="1" <%= m.no_neck_card ? 'checked' : '' %>></td>
+            <td><%= m.outside_nairobi ? '📍' : '—' %></td>
+          </tr>
+        <% }) %>
+      </table>
+    </div>
+    <div style="margin-top:16px;display:flex;gap:8px;">
+      <button class="btn btn-primary">Save Attendance</button>
+      <a href="/admin/minutes" class="btn btn-outline">Back to Minutes</a>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2>Attendance Summary</h2></div>
+  <div class="grid" style="grid-template-columns:repeat(5,1fr);">
+    <div class="stat-card"><div class="stat-value" style="color:#22c55e;"><%= presentCount %></div><div class="stat-label">Present</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:#ef4444;"><%= absentCount %></div><div class="stat-label">Absent</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:#f59e0b;"><%= excusedCount %></div><div class="stat-label">Excused</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:#f97316;"><%= lateCount %></div><div class="stat-label">Late</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:#dc2626;"><%= noCardCount %></div><div class="stat-label">No Card</div></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2>Fined Members</h2></div>
+  <div style="margin-top:8px;">
+    <table>
+      <tr><th>Member</th><th>Fine Type</th><th>Amount</th><th>Date</th></tr>
+      <% finesToday.forEach(function(f) { %>
+        <tr>
+          <td><%= f.member_name %></td>
+          <td><%= f.reason %></td>
+          <td style="font-weight:700;">KES <%= Number(f.amount).toLocaleString() %></td>
+          <td class="text-xs text-muted"><%= new Date(f.created_at).toLocaleDateString() %></td>
+        </tr>
+      <% }) %>
+      <% if (finesToday.length === 0) { %>
+        <tr><td colspan="4" class="text-center text-muted">No fines recorded yet</td></tr>
+      <% } %>
+    </table>
+  </div>
+</div>

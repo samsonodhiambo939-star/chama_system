@@ -1,0 +1,48 @@
+<% header('My Fines'); %>
+<div class="page-title">My Fines</div>
+<p class="page-subtitle">View and pay your pending fines</p>
+
+<% if (pendingRequests > 0) { %>
+  <div class="alert alert-info"><span class="alert-icon">⏳</span><span>You have <strong>KES <%= Number(pendingRequests).toLocaleString() %></strong> in pending payment requests awaiting admin approval.</span></div>
+<% } %>
+
+<% if (totalPending > 0) { %>
+  <div class="alert alert-warning">
+    <span class="alert-icon">⚖️</span>
+    <span style="flex:1">You have <strong>KES <%= Number(totalPending).toLocaleString() %></strong> in pending fines.</span>
+  </div>
+<% } else { %>
+  <div class="alert alert-success"><span class="alert-icon">✅</span><span>No pending fines. Good standing!</span></div>
+<% } %>
+
+<% if (pendingFines.length > 0) { %>
+  <div class="card">
+    <div class="card-header"><h2>Pending Fines</h2></div>
+    <% pendingFines.forEach(f => { %>
+      <div style="border:1px solid #e2e8f0;border-radius:10px;padding:16px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+        <div>
+          <div style="font-weight:700;font-size:18px;">KES <%= Number(f.balance).toLocaleString() %></div>
+          <div class="text-sm text-muted"><%= f.reason %> — <%= new Date(f.created_at).toLocaleDateString() %></div>
+        </div>
+        <form method="POST" action="/member/fines/pay/<%= f.id %>" style="display:flex;gap:8px;align-items:center;">
+          <input type="number" name="repay_amount" min="1" max="<%= f.balance %>" step="1" value="<%= f.balance %>" style="width:120px;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;text-align:right;" required>
+          <button class="btn btn-warning btn-sm">Pay</button>
+        </form>
+      </div>
+    <% }) %>
+  </div>
+<% } %>
+
+<% if (paidFines.length > 0) { %>
+  <div class="card">
+    <div class="card-header"><h2>Paid Fines</h2></div>
+    <div class="table-wrap">
+      <table>
+        <tr><th>Amount</th><th>Reason</th><th>Date</th><th>Status</th></tr>
+        <% paidFines.forEach(f => { %>
+          <tr><td>KES <%= Number(f.amount).toLocaleString() %></td><td><%= f.reason %></td><td><%= new Date(f.created_at).toLocaleDateString() %></td><td><span class="badge badge-paid">Paid</span></td></tr>
+        <% }) %>
+      </table>
+    </div>
+  </div>
+<% } %>

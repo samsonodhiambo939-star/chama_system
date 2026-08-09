@@ -1,0 +1,23 @@
+<%- include('layout') %>
+<div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div class="card" style="padding: 30px; text-align: center;">
+    <div style="font-size: 48px; margin-bottom: 10px;">✓</div>
+    <h2><%= title %></h2>
+    <p style="color: var(--text-muted); margin-bottom: 20px;">Transaction Receipt</p>
+    <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+      <tr><td style="padding: 8px; text-align: left; color: var(--text-muted);">Member</td><td style="padding: 8px; text-align: right; font-weight: 600;"><%= data.first_name %> <%= data.last_name %> (<%= data.member_number %>)</td></tr>
+      <% if (data.fund) { %><tr><td style="padding: 8px; text-align: left; color: var(--text-muted);">Fund</td><td style="padding: 8px; text-align: right; font-weight: 600;"><%= data.fund %></td></tr><% } %>
+      <% if (data.amount) { %><tr><td style="padding: 8px; text-align: left; color: var(--text-muted);">Amount</td><td style="padding: 8px; text-align: right; font-weight: 600;">KES <%= Number(data.amount).toLocaleString() %></td></tr><% } %>
+      <% if (type === 'loan' && data.issued_date) { %><tr><td style="padding: 8px; text-align: left; color: var(--text-muted);">Issued</td><td style="padding: 8px; text-align: right; font-weight: 600;"><%= data.issued_date %></td></tr><% } %>
+      <% if (data.due_date) { %><tr><td style="padding: 8px; text-align: left; color: var(--text-muted);">Due</td><td style="padding: 8px; text-align: right; font-weight: 600;"><%= data.due_date %></td></tr><% } %>
+      <% if (data.interest_rate) { %><tr><td style="padding: 8px; text-align: left; color: var(--text-muted);">Interest</td><td style="padding: 8px; text-align: right; font-weight: 600;"><%= data.interest_rate %>%</td></tr><% } %>
+      <tr><td style="padding: 8px; text-align: left; color: var(--text-muted);">Status</td><td style="padding: 8px; text-align: right; font-weight: 600; color: <%=[data.status]==='approved'||[data.status]==='active'||[data.status]==='paid'?'#22c55e':'#ef4444'%>;"><%= data.status %></td></tr>
+      <tr><td style="padding: 8px; text-align: left; color: var(--text-muted);">Date</td><td style="padding: 8px; text-align: right; font-weight: 600;"><%= new Date(data.created_at).toLocaleDateString() %></td></tr>
+    </table>
+    <div style="border-top: 1px solid var(--border); padding-top: 20px; margin-top: 20px;">
+      <button class="btn btn-primary" onclick="window.print()">Print Receipt</button>
+      <a href="/member" class="btn btn-secondary">Back to Dashboard</a>
+    </div>
+  </div>
+</div>
+</html>

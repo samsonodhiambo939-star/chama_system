@@ -1,0 +1,32 @@
+<% header('Withdrawal Requests'); %>
+<div class="page-title">Withdrawal Requests</div>
+<p class="page-subtitle">Approve or reject member withdrawal requests</p>
+
+<div class="card">
+  <% if (requests.length === 0) { %>
+    <div class="empty-state"><div class="empty-icon">✅</div><div class="empty-text">No pending withdrawal requests.</div></div>
+  <% } else { %>
+    <div class="table-wrap">
+      <table>
+        <tr><th>Member</th><th>Fund</th><th style="text-align:right">Amount</th><th>Requested</th><th>Status</th><th>Level</th><th>Actions</th></tr>
+        <% requests.forEach(r => { %>
+          <tr>
+            <td><strong><%= r.first_name %> <%= r.last_name %></strong><br><span class="text-xs text-muted"><%= r.member_number %></span></td>
+            <td><%= r.fund_name %></td>
+            <td style="text-align:right;font-weight:700;">KES <%= Number(r.amount).toLocaleString() %></td>
+            <td class="text-sm"><%= new Date(r.created_at).toLocaleDateString() %></td>
+            <td><span class="badge badge-<%= r.status %>"><%= r.status %></span></td>
+            <td><span class="text-xs text-muted"><%= r.approval_level || '—' %></span></td>
+            <td style="white-space:nowrap;">
+              <% if (r.status === 'pending' || r.status === 'pending_chairman') { %>
+                <% if (user.admin_role === 'chairman') { %><a href="/admin/withdrawals/approve/chairman/<%= r.id %>" class="btn btn-success btn-sm">Chairman OK</a><% } %>
+                <% if (user.admin_role === 'treasurer') { %><a href="/admin/withdrawals/approve/treasurer/<%= r.id %>" class="btn btn-success btn-sm">Treasurer OK</a><% } %>
+                <form method="POST" action="/admin/withdrawals/reject/<%= r.id %>" style="display:inline;"><button class="btn btn-danger btn-sm">Reject</button></form>
+              <% } else { %><span class="text-xs text-muted">—</span><% } %>
+            </td>
+          </tr>
+        <% }) %>
+      </table>
+    </div>
+  <% } %>
+</div>
