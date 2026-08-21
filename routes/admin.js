@@ -56,7 +56,7 @@ router.get('/', async (req, res) => {
 
 router.get('/approvals', async (req, res) => {
   const pendingContributions = await db.prepare(`
-    SELECT c.id, c.amount, c.created_at, f.name as fund, m.first_name, m.last_name, m.member_number, cy.start_date, cy.end_date
+    SELECT c.id, c.amount, c.created_at, c.created_by, c.created_by_role, f.name as fund, m.first_name, m.last_name, m.member_number, cy.start_date, cy.end_date
     FROM contributions c
     JOIN fund_types f ON c.fund_type_id = f.id
     JOIN members m ON c.member_id = m.id
@@ -86,13 +86,15 @@ router.get('/approvals', async (req, res) => {
     ORDER BY pr.created_at ASC
   `).all();
 
-  res.renderWithLayout('admin/approvals', { pendingContributions, pendingLoans, pendingPayments });
+  res.renderWithLayout('admin/approvals', { pendingContributions, pendingLoans, pendingPayments, error: req.query.error || null });
 });
 
 router.post('/contributions/approve/:id', async (req, res) => {
   try {
     const contrib = await db.prepare("SELECT * FROM contributions WHERE id = ? AND status = 'pending'").get(req.params.id);
     if (!contrib) return res.redirect('/admin/approvals');
+    const check = checkApprovalRight(req.session.user, contrib);
+    if (!check.ok) return res.redirect('/admin/approvals?error=' + encodeURIComponent(check.reason));
 
     await db.transaction(async () => {
       await db.prepare("UPDATE contributions SET status = 'approved' WHERE id = ?").run(contrib.id);
@@ -113,6 +115,8 @@ router.post('/contributions/approve/:id', async (req, res) => {
 
 router.post('/contributions/reject/:id', async (req, res) => {
   const contrib = await db.prepare("SELECT * FROM contributions WHERE id = ? AND status = 'pending'").get(req.params.id);
+  const check = checkApprovalRight(req.session.user, contrib);
+  if (!check.ok) return res.redirect('/admin/approvals?error=' + encodeURIComponent(check.reason));
   await db.prepare("UPDATE contributions SET status = 'rejected' WHERE id = ? AND status = 'pending'").run(req.params.id);
   if (contrib) { await notify(contrib.member_id, 'Contribution Rejected', 'KES ' + contrib.amount.toLocaleString() + ' contribution was rejected', 'error', '/member/contribute');
     auditLog(req.session.user, 'reject', 'contribution', contrib.id, 'KES ' + contrib.amount + ' rejected'); }
@@ -122,6 +126,8 @@ router.post('/contributions/reject/:id', async (req, res) => {
 router.post('/loans/approve/:id', async (req, res) => {
   const loan = await db.prepare("SELECT * FROM loans WHERE id = ? AND status = 'pending'").get(req.params.id);
   if (!loan) return res.redirect('/admin/approvals');
+  const check = checkApprovalRight(req.session.user, loan);
+  if (!check.ok) return res.redirect('/admin/approvals?error=' + encodeURIComponent(check.reason));
 
   const today = new Date().toISOString().split('T')[0];
   const dueDate = new Date();
@@ -143,6 +149,8 @@ router.post('/loans/approve/:id', async (req, res) => {
 
 router.post('/loans/reject/:id', async (req, res) => {
   const loan = await db.prepare("SELECT * FROM loans WHERE id = ? AND status = 'pending'").get(req.params.id);
+  const check = checkApprovalRight(req.session.user, loan);
+  if (!check.ok) return res.redirect('/admin/approvals?error=' + encodeURIComponent(check.reason));
   await db.prepare("UPDATE loans SET status = 'rejected' WHERE id = ? AND status = 'pending'").run(req.params.id);
   if (loan) { await notify(loan.member_id, 'Loan Rejected', 'KES ' + loan.amount.toLocaleString() + ' loan application was rejected', 'error', '/member/loans');
     auditLog(req.session.user, 'reject', 'loan', loan.id, 'KES ' + loan.amount + ' rejected'); }
@@ -311,33 +319,40 @@ router.get('/fines', async (req, res) => {
 router.post('/fines/add', async (req, res) => {
   const { member_id, amount, reason } = req.body;
   if (!member_id || !amount || amount <= 0) return res.redirect('/admin/fines');
-  const r = await db.prepare('INSERT INTO fines (member_id, amount, balance, reason, status) VALUES (?, ?, ?, ?, ?)').run(member_id, amount, amount, reason || 'Late penalty', 'pending');
+  const r = await db.prepare('INSERT INTO fines (member_id, amount, balance, reason, status, created_by, created_by_role) VALUES (?, ?, ?, ?, ?, ?, ?)').run(member_id, amount, amount, reason || 'Late penalty', 'pending', req.session.user.id, req.session.user.admin_role || 'admin');
   auditLog(req.session.user, 'create', 'fine', r.lastInsertRowid, 'KES ' + amount + ' fine for member ' + member_id);
   res.redirect('/admin/fines');
 });
 
 router.get('/membercard', async (req, res) => {
-  const cards = await db.prepare(`
-    SELECT mc.*, m.first_name, m.last_name, m.member_number
-    FROM member_cards mc
-    JOIN members m ON mc.member_id = m.id
-    ORDER BY mc.created_at DESC
-  `).all();
-  const members = await db.prepare(`
-    SELECT m.id, m.first_name, m.last_name, m.member_number,
-      COALESCE(mc.assigned_amount, 0) as assigned, COALESCE(mc.paid_amount, 0) as paid
-    FROM members m
-    LEFT JOIN member_cards mc ON mc.member_id = m.id
-    WHERE m.is_active = 1 ORDER BY m.member_number
-  `).all();
-  res.renderWithLayout('admin/membercard', { cards, members, message: null });
+  try {
+    const cards = await db.prepare(`
+      SELECT mc.*, m.first_name, m.last_name, m.member_number
+      FROM member_cards mc
+      JOIN members m ON mc.member_id = m.id
+      ORDER BY mc.created_at DESC
+    `).all();
+    const members = await db.prepare(`
+      SELECT m.id, m.first_name, m.last_name, m.member_number,
+        COALESCE(mc.assigned_amount, 0) as assigned, COALESCE(mc.paid_amount, 0) as paid
+      FROM members m
+      LEFT JOIN member_cards mc ON mc.member_id = m.id
+      WHERE m.is_active = 1 ORDER BY m.member_number
+    `).all();
+    res.renderWithLayout('admin/membercard', { cards, members, message: req.query.message || null, error: req.query.error || null });
+  } catch (e) {
+    console.error('MEMBERCARD LOAD ERROR:', e.message, e.stack);
+    res.renderWithLayout('admin/membercard', { cards: [], members: [], message: null, error: 'Could not load member cards: ' + e.message });
+  }
 });
 
 router.post('/membercard/assign', async (req, res) => {
   try {
     const member_id = Number(req.body.member_id);
     const amount = parseFloat(req.body.amount);
-    if (!member_id || !amount || amount <= 0) return res.redirect('/admin/membercard');
+    if (!member_id || !amount || amount <= 0 || !isFinite(amount)) {
+      return res.redirect('/admin/membercard?error=' + encodeURIComponent('Please select a member and enter a valid amount.'));
+    }
     const isPg = !!process.env.DATABASE_URL;
     const existing = isPg
       ? await db.prepare("SELECT id FROM member_cards WHERE member_id = $1").get(member_id)
@@ -349,17 +364,26 @@ router.post('/membercard/assign', async (req, res) => {
         await db.prepare("UPDATE member_cards SET assigned_amount = assigned_amount + ? WHERE member_id = ?").run(amount, member_id);
       }
     } else {
-      if (isPg) {
-        await db.prepare("INSERT INTO member_cards (member_id, assigned_amount, paid_amount) VALUES ($1, $2, 0)").run(member_id, amount);
-      } else {
-        await db.prepare("INSERT INTO member_cards (member_id, assigned_amount, paid_amount) VALUES (?, ?, 0)").run(member_id, amount);
+      try {
+        if (isPg) {
+          await db.prepare("INSERT INTO member_cards (member_id, assigned_amount, paid_amount) VALUES ($1, $2, 0)").run(member_id, amount);
+        } else {
+          await db.prepare("INSERT INTO member_cards (member_id, assigned_amount, paid_amount) VALUES (?, ?, 0)").run(member_id, amount);
+        }
+      } catch (insertErr) {
+        // Race/duplicate: row already exists, fall back to adding onto it
+        if (isPg) {
+          await db.prepare("UPDATE member_cards SET assigned_amount = assigned_amount + $1 WHERE member_id = $2").run(amount, member_id);
+        } else {
+          await db.prepare("UPDATE member_cards SET assigned_amount = assigned_amount + ? WHERE member_id = ?").run(amount, member_id);
+        }
       }
     }
     auditLog(req.session.user, 'assign', 'member_card', member_id, 'KES ' + amount + ' assigned');
-    res.redirect('/admin/membercard');
+    res.redirect('/admin/membercard?message=' + encodeURIComponent('KES ' + amount.toLocaleString() + ' card amount assigned.'));
   } catch (e) {
     console.error('MEMBERCARD ASSIGN ERROR:', e.message, e.stack);
-    res.redirect('/admin/membercard');
+    res.redirect('/admin/membercard?error=' + encodeURIComponent('Could not assign card amount: ' + e.message));
   }
 });
 
@@ -435,12 +459,14 @@ router.get('/payments', async (req, res) => {
     JOIN members m ON pr.member_id = m.id
     ORDER BY pr.created_at DESC
   `).all();
-  res.renderWithLayout('admin/payments', { requests });
+  res.renderWithLayout('admin/payments', { requests, error: req.query.error || null });
 });
 
 router.post('/payments/approve/:id', async (req, res) => {
   const reqData = await db.prepare("SELECT * FROM payment_requests WHERE id = ? AND status = 'pending'").get(req.params.id);
   if (!reqData) return res.redirect('/admin/payments');
+  const check = checkApprovalRight(req.session.user, reqData);
+  if (!check.ok) return res.redirect('/admin/payments?error=' + encodeURIComponent(check.reason));
 
   await db.transaction(async () => {
     const now = new Date().toISOString();
@@ -494,6 +520,8 @@ router.post('/payments/approve/:id', async (req, res) => {
 
 router.post('/payments/reject/:id', async (req, res) => {
   const reqData = await db.prepare("SELECT * FROM payment_requests WHERE id = ? AND status = 'pending'").get(req.params.id);
+  const check = checkApprovalRight(req.session.user, reqData);
+  if (!check.ok) return res.redirect('/admin/payments?error=' + encodeURIComponent(check.reason));
   await db.prepare("UPDATE payment_requests SET status = 'rejected' WHERE id = ? AND status = 'pending'").run(req.params.id);
   if (reqData) {
     const label = { fine: 'Fine', member_card: 'Card', loan: 'Loan' }[reqData.payment_type] || 'Payment';
@@ -511,12 +539,14 @@ router.get('/withdrawals', async (req, res) => {
     JOIN fund_types f ON wr.fund_type_id = f.id
     ORDER BY wr.created_at DESC
   `).all();
-  res.renderWithLayout('admin/withdrawals', { requests });
+  res.renderWithLayout('admin/withdrawals', { requests, error: req.query.error || null });
 });
 
 router.post('/withdrawals/approve/:id', async (req, res) => {
   const wr = await db.prepare("SELECT * FROM withdrawal_requests WHERE id = ? AND status = 'pending'").get(req.params.id);
   if (!wr) return res.redirect('/admin/withdrawals');
+  const check = checkApprovalRight(req.session.user, wr);
+  if (!check.ok) return res.redirect('/admin/withdrawals?error=' + encodeURIComponent(check.reason));
   await db.transaction(async () => {
     await db.prepare("UPDATE withdrawal_requests SET status = 'approved', approved_at = datetime('now') WHERE id = ?").run(wr.id);
     await db.prepare("UPDATE member_balances SET balance = balance - ? WHERE member_id = ? AND fund_type_id = ?").run(wr.amount, wr.member_id, wr.fund_type_id);
@@ -528,6 +558,8 @@ router.post('/withdrawals/approve/:id', async (req, res) => {
 
 router.post('/withdrawals/reject/:id', async (req, res) => {
   const wr = await db.prepare("SELECT * FROM withdrawal_requests WHERE id = ? AND status = 'pending'").get(req.params.id);
+  const check = checkApprovalRight(req.session.user, wr);
+  if (!check.ok) return res.redirect('/admin/withdrawals?error=' + encodeURIComponent(check.reason));
   await db.prepare("UPDATE withdrawal_requests SET status = 'rejected' WHERE id = ?").run(req.params.id);
   if (wr) { auditLog(req.session.user, 'reject', 'withdrawal', wr.id, 'KES ' + wr.amount + ' rejected');
     await notify(wr.member_id, 'Withdrawal Rejected', 'KES ' + wr.amount.toLocaleString() + ' withdrawal request was rejected', 'error', '/withdraw'); }
@@ -609,7 +641,7 @@ async function applyAutoFine(meetingId, ruleName, reasonPrefix, memberFilter, am
     const likeSql = isPg ? "SELECT id FROM fines WHERE member_id = $1 AND reason ILIKE $2 AND status = 'pending'" : "SELECT id FROM fines WHERE member_id = ? AND reason LIKE ? AND status = 'pending'";
     const existing = await db.prepare(likeSql).get(t.member_id, '%' + reasonPrefix + '%');
     if (!existing) {
-      await db.prepare("INSERT INTO fines (member_id, amount, balance, reason, status) VALUES (?, ?, ?, ?, 'pending')").run(t.member_id, fineAmount, fineAmount, reason);
+      await db.prepare("INSERT INTO fines (member_id, amount, balance, reason, status, created_by, created_by_role) VALUES (?, ?, ?, ?, 'pending', ?, ?)").run(t.member_id, fineAmount, fineAmount, reason, req.session.user.id, req.session.user.admin_role || 'admin');
       count++;
     }
   }
@@ -630,7 +662,7 @@ router.post('/attendance/auto-fine/absentism/:meetingId', async (req, res) => {
     const likeSql = isPg ? "SELECT id FROM fines WHERE member_id = $1 AND reason ILIKE $2 AND status = 'pending'" : "SELECT id FROM fines WHERE member_id = ? AND reason LIKE ? AND status = 'pending'";
     const existing = await db.prepare(likeSql).get(a.member_id, '%Absentism%');
     if (!existing) {
-      await db.prepare("INSERT INTO fines (member_id, amount, balance, reason, status) VALUES (?, ?, ?, ?, 'pending')").run(a.member_id, amount, amount, reason);
+      await db.prepare("INSERT INTO fines (member_id, amount, balance, reason, status, created_by, created_by_role) VALUES (?, ?, ?, ?, 'pending', ?, ?)").run(a.member_id, amount, amount, reason, req.session.user.id, req.session.user.admin_role || 'admin');
       count++;
     }
   }
@@ -651,7 +683,7 @@ router.post('/attendance/auto-fine/lateness/:meetingId', async (req, res) => {
     const likeSql = isPg ? "SELECT id FROM fines WHERE member_id = $1 AND reason ILIKE $2 AND status = 'pending'" : "SELECT id FROM fines WHERE member_id = ? AND reason LIKE ? AND status = 'pending'";
     const existing = await db.prepare(likeSql).get(a.member_id, '%Lateness%');
     if (!existing) {
-      await db.prepare("INSERT INTO fines (member_id, amount, balance, reason, status) VALUES (?, ?, ?, ?, 'pending')").run(a.member_id, amount, amount, reason);
+      await db.prepare("INSERT INTO fines (member_id, amount, balance, reason, status, created_by, created_by_role) VALUES (?, ?, ?, ?, 'pending', ?, ?)").run(a.member_id, amount, amount, reason, req.session.user.id, req.session.user.admin_role || 'admin');
       count++;
     }
   }
@@ -672,7 +704,7 @@ router.post('/attendance/auto-fine/no_card/:meetingId', async (req, res) => {
     const likeSql = isPg ? "SELECT id FROM fines WHERE member_id = $1 AND reason ILIKE $2 AND status = 'pending'" : "SELECT id FROM fines WHERE member_id = ? AND reason LIKE ? AND status = 'pending'";
     const existing = await db.prepare(likeSql).get(a.member_id, '%No member card%');
     if (!existing) {
-      await db.prepare("INSERT INTO fines (member_id, amount, balance, reason, status) VALUES (?, ?, ?, ?, 'pending')").run(a.member_id, amount, amount, reason);
+      await db.prepare("INSERT INTO fines (member_id, amount, balance, reason, status, created_by, created_by_role) VALUES (?, ?, ?, ?, 'pending', ?, ?)").run(a.member_id, amount, amount, reason, req.session.user.id, req.session.user.admin_role || 'admin');
       count++;
     }
   }
@@ -693,7 +725,7 @@ router.post('/attendance/auto-fine/no_neck_card/:meetingId', async (req, res) =>
     const likeSql = isPg ? "SELECT id FROM fines WHERE member_id = $1 AND reason ILIKE $2 AND status = 'pending'" : "SELECT id FROM fines WHERE member_id = ? AND reason LIKE ? AND status = 'pending'";
     const existing = await db.prepare(likeSql).get(a.member_id, '%No neck card%');
     if (!existing) {
-      await db.prepare("INSERT INTO fines (member_id, amount, balance, reason, status) VALUES (?, ?, ?, ?, 'pending')").run(a.member_id, amount, amount, reason);
+      await db.prepare("INSERT INTO fines (member_id, amount, balance, reason, status, created_by, created_by_role) VALUES (?, ?, ?, ?, 'pending', ?, ?)").run(a.member_id, amount, amount, reason, req.session.user.id, req.session.user.admin_role || 'admin');
       count++;
     }
   }
@@ -718,7 +750,7 @@ router.post('/attendance/auto-fine/outside_nairobi/:meetingId', async (req, res)
     const likeSql = isPg ? "SELECT id FROM fines WHERE member_id = $1 AND reason ILIKE $2 AND status = 'pending'" : "SELECT id FROM fines WHERE member_id = ? AND reason LIKE ? AND status = 'pending'";
     const existing = await db.prepare(likeSql).get(v.member_id, '%Outside Nairobi absentism%');
     if (!existing) {
-      await db.prepare("INSERT INTO fines (member_id, amount, balance, reason, status) VALUES (?, ?, ?, ?, 'pending')").run(v.member_id, amount, amount, reason);
+      await db.prepare("INSERT INTO fines (member_id, amount, balance, reason, status, created_by, created_by_role) VALUES (?, ?, ?, ?, 'pending', ?, ?)").run(v.member_id, amount, amount, reason, req.session.user.id, req.session.user.admin_role || 'admin');
       count++;
     }
   }
@@ -731,6 +763,8 @@ router.get('/withdrawals/approve/chairman/:id', async (req, res) => {
   const wr = await db.prepare("SELECT * FROM withdrawal_requests WHERE id = ? AND status = 'pending'").get(req.params.id);
   if (!wr) return res.redirect('/admin/withdrawals');
   if (req.session.user.admin_role !== 'chairman') return res.redirect('/admin/withdrawals');
+  const check = checkApprovalRight(req.session.user, wr);
+  if (!check.ok) return res.redirect('/admin/withdrawals?error=' + encodeURIComponent(check.reason));
   await db.prepare("UPDATE withdrawal_requests SET approval_level = 'pending_treasurer', status = 'pending_chairman' WHERE id = ?").run(req.params.id);
   auditLog(req.session.user, 'approve_level1', 'withdrawal', wr.id, 'Chairman approved KES ' + wr.amount);
   await notify(wr.member_id, 'Withdrawal: Chairman Approved', 'Chairman approved your withdrawal, awaiting treasurer', 'info', '/withdraw');
@@ -741,6 +775,8 @@ router.get('/withdrawals/approve/treasurer/:id', async (req, res) => {
   const wr = await db.prepare("SELECT * FROM withdrawal_requests WHERE id = ? AND (status = 'pending_chairman' OR status = 'pending')").get(req.params.id);
   if (!wr) return res.redirect('/admin/withdrawals');
   if (req.session.user.admin_role !== 'treasurer') return res.redirect('/admin/withdrawals');
+  const check = checkApprovalRight(req.session.user, wr);
+  if (!check.ok) return res.redirect('/admin/withdrawals?error=' + encodeURIComponent(check.reason));
   await db.transaction(async () => {
     await db.prepare("UPDATE withdrawal_requests SET status = 'approved', approval_level = 'approved', approved_at = datetime('now') WHERE id = ?").run(wr.id);
     await db.prepare("UPDATE member_balances SET balance = balance - ? WHERE member_id = ? AND fund_type_id = ?").run(wr.amount, wr.member_id, wr.fund_type_id);

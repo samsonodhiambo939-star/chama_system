@@ -1,6 +1,7 @@
 <% header('Approvals'); %>
 <div class="page-title">Pending Approvals</div>
 <p class="page-subtitle">Review and approve contributions, loan applications, and repayments</p>
+<% if (typeof error !== 'undefined' && error) { %><div class="alert alert-error"><span class="alert-icon">⚠️</span><span><%= error %></span></div><% } %>
 
 <div style="display:flex;gap:12px;align-items:center;margin-bottom:20px;flex-wrap:wrap;">
   <input id="searchInput" placeholder="Search member..." style="flex:1;min-width:200px;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:var(--input-bg);color:var(--text);">
@@ -34,12 +35,20 @@
             <td class="text-sm"><%= c.start_date %> — <%= c.end_date %></td>
             <td class="text-sm"><%= new Date(c.created_at).toLocaleDateString() %></td>
             <td style="white-space:nowrap;">
-              <form method="POST" action="/admin/contributions/approve/<%= c.id %>" style="display:inline;">
-                <button class="btn btn-success btn-sm">Approve</button>
-              </form>
-              <form method="POST" action="/admin/contributions/reject/<%= c.id %>" style="display:inline;" onsubmit="event.preventDefault();confirmAction('Reject this contribution?',function(){this.submit()}.bind(this))">
-                <button class="btn btn-danger btn-sm">Reject</button>
-              </form>
+              <% if (c.created_by === user.id) { %>
+                <span class="badge badge-pending">Entered by you — cannot self-approve</span>
+              <% } else if (c.created_by_role === 'chairman' && user.admin_role === 'chairman') { %>
+                <span class="badge badge-info">Entered by chairman — treasurer must approve</span>
+              <% } else if (c.created_by_role === 'treasurer' && user.admin_role === 'treasurer') { %>
+                <span class="badge badge-info">Entered by treasurer — chairman must approve</span>
+              <% } else { %>
+                <form method="POST" action="/admin/contributions/approve/<%= c.id %>" style="display:inline;">
+                  <button class="btn btn-success btn-sm">Approve</button>
+                </form>
+                <form method="POST" action="/admin/contributions/reject/<%= c.id %>" style="display:inline;" onsubmit="event.preventDefault();confirmAction('Reject this contribution?',function(){this.submit()}.bind(this))">
+                  <button class="btn btn-danger btn-sm">Reject</button>
+                </form>
+              <% } %>
             </td>
           </tr>
         <% }) %>
@@ -64,12 +73,20 @@
             <td style="text-align:right;font-weight:700;color:#ef4444;">KES <%= Number(l.amount * 1.1).toLocaleString() %></td>
             <td class="text-sm"><%= new Date(l.created_at).toLocaleDateString() %></td>
             <td style="white-space:nowrap;">
-              <form method="POST" action="/admin/loans/approve/<%= l.id %>" style="display:inline;">
-                <button class="btn btn-success btn-sm">✅ Approve (10% auto-applied)</button>
-              </form>
-              <form method="POST" action="/admin/loans/reject/<%= l.id %>" style="display:inline;" onsubmit="event.preventDefault();confirmAction('Reject this loan application?',function(){this.submit()}.bind(this))">
-                <button class="btn btn-danger btn-sm">Reject</button>
-              </form>
+              <% if (l.created_by === user.id) { %>
+                <span class="badge badge-pending">Entered by you — cannot self-approve</span>
+              <% } else if (l.created_by_role === 'chairman' && user.admin_role === 'chairman') { %>
+                <span class="badge badge-info">Entered by chairman — treasurer must approve</span>
+              <% } else if (l.created_by_role === 'treasurer' && user.admin_role === 'treasurer') { %>
+                <span class="badge badge-info">Entered by treasurer — chairman must approve</span>
+              <% } else { %>
+                <form method="POST" action="/admin/loans/approve/<%= l.id %>" style="display:inline;">
+                  <button class="btn btn-success btn-sm">✅ Approve (10% auto-applied)</button>
+                </form>
+                <form method="POST" action="/admin/loans/reject/<%= l.id %>" style="display:inline;" onsubmit="event.preventDefault();confirmAction('Reject this loan application?',function(){this.submit()}.bind(this))">
+                  <button class="btn btn-danger btn-sm">Reject</button>
+                </form>
+              <% } %>
             </td>
           </tr>
         <% }) %>
@@ -99,12 +116,20 @@
             <td style="text-align:right;font-weight:700;">KES <%= Number(r.amount).toLocaleString() %></td>
             <td class="text-sm"><%= new Date(r.created_at).toLocaleDateString() %></td>
             <td style="white-space:nowrap;">
-              <form method="POST" action="/admin/payments/approve/<%= r.id %>" style="display:inline;">
-                <button class="btn btn-success btn-sm">Approve</button>
-              </form>
-              <form method="POST" action="/admin/payments/reject/<%= r.id %>" style="display:inline;" onsubmit="event.preventDefault();confirmAction('Reject this payment?',function(){this.submit()}.bind(this))">
-                <button class="btn btn-danger btn-sm">Reject</button>
-              </form>
+              <% if (r.created_by === user.id) { %>
+                <span class="badge badge-pending">Entered by you — cannot self-approve</span>
+              <% } else if (r.created_by_role === 'chairman' && user.admin_role === 'chairman') { %>
+                <span class="badge badge-info">Entered by chairman — treasurer must approve</span>
+              <% } else if (r.created_by_role === 'treasurer' && user.admin_role === 'treasurer') { %>
+                <span class="badge badge-info">Entered by treasurer — chairman must approve</span>
+              <% } else { %>
+                <form method="POST" action="/admin/payments/approve/<%= r.id %>" style="display:inline;">
+                  <button class="btn btn-success btn-sm">Approve</button>
+                </form>
+                <form method="POST" action="/admin/payments/reject/<%= r.id %>" style="display:inline;" onsubmit="event.preventDefault();confirmAction('Reject this payment?',function(){this.submit()}.bind(this))">
+                  <button class="btn btn-danger btn-sm">Reject</button>
+                </form>
+              <% } %>
             </td>
           </tr>
         <% }) %>

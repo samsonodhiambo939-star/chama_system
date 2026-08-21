@@ -1,6 +1,7 @@
 <% header('Payment Approvals'); %>
 <div class="page-title">Payment Approvals</div>
 <p class="page-subtitle">Approve or reject member fine and member card payments</p>
+<% if (typeof error !== 'undefined' && error) { %><div class="alert alert-error"><span class="alert-icon">⚠️</span><span><%= error %></span></div><% } %>
 
 <div class="card">
   <div class="card-header"><h2>Payment Requests</h2></div>

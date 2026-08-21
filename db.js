@@ -62,6 +62,26 @@ if (process.env.DATABASE_URL) {
   sqliteDb.pragma('journal_mode = WAL');
   sqliteDb.pragma('foreign_keys = ON');
   db = sqliteDb;
+  // Async-friendly transaction wrapper (better-sqlite3 native transactions are sync-only).
+  // Since all better-sqlite3 calls are synchronous, an async fn body runs to completion
+  // before we commit, keeping parity with the PostgreSQL backend.
+  db.transaction = (fn) => (...args) => {
+    sqliteDb.exec('BEGIN');
+    try {
+      const result = fn(...args);
+      if (result && typeof result.then === 'function') {
+        return result.then(
+          (r) => { sqliteDb.exec('COMMIT'); return r; },
+          (e) => { sqliteDb.exec('ROLLBACK'); throw e; }
+        );
+      }
+      sqliteDb.exec('COMMIT');
+      return result;
+    } catch (e) {
+      sqliteDb.exec('ROLLBACK');
+      throw e;
+    }
+  };
 }
 
 module.exports = db;

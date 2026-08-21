@@ -3,6 +3,7 @@
 <p class="page-subtitle">Review and approve member welfare support requests (Welfare Officer)</p>
 
 <% if (error === 'insufficient') { %><div class="alert alert-error"><span class="alert-icon">❌</span>Insufficient welfare fund balance to approve this request.</div><% } %>
+<% if (typeof error === 'string' && error !== 'insufficient') { %><div class="alert alert-error"><span class="alert-icon">⚠️</span><span><%= error %></span></div><% } %>
 
 <div class="card">
   <div class="card-header"><h2>Pending Welfare Requests</h2></div>

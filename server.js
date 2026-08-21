@@ -85,8 +85,10 @@ app.use('/', authRoutes);
 app.post('/admin/contributions/approve-all', async (req, res) => {
   if (!req.session.user || req.session.user.role !== 'admin') return res.redirect('/');
   const pending = await db.prepare("SELECT * FROM contributions WHERE status = 'pending' AND amount > 0").all();
-  const trans = await db.transaction(async () => {
+  const trans = db.transaction(async () => {
     for (const c of pending) {
+      const check = checkApprovalRight(req.session.user, c);
+      if (!check.ok) continue;
       await db.prepare("UPDATE contributions SET status = 'approved' WHERE id = ?").run(c.id);
       const upd = await db.prepare("UPDATE member_balances SET balance = balance + ? WHERE member_id = ? AND fund_type_id = ?").run(c.amount, c.member_id, c.fund_type_id);
       if (upd.changes === 0) {
@@ -103,8 +105,10 @@ app.post('/admin/contributions/approve-all', async (req, res) => {
 app.post('/admin/payments/approve-all', async (req, res) => {
   if (!req.session.user || req.session.user.role !== 'admin') return res.redirect('/');
   const pending = await db.prepare("SELECT * FROM payment_requests WHERE status = 'pending'").all();
-  const trans = await db.transaction(async () => {
+  const trans = db.transaction(async () => {
     for (const r of pending) {
+      const check = checkApprovalRight(req.session.user, r);
+      if (!check.ok) continue;
       const now = new Date().toISOString();
       await db.prepare("UPDATE payment_requests SET status = 'approved', approved_at = ? WHERE id = ?").run(now, r.id);
       if (r.payment_type === 'fine') {
@@ -162,7 +166,7 @@ app.post('/member/welfare', async (req, res) => {
     const pendingAmt = await db.prepare("SELECT COALESCE(SUM(amount),0) as t FROM welfare_requests WHERE member_id = ? AND status = 'pending'").get(memberId);
     return res.renderWithLayout('member/welfare', { user: req.session.user, balance: welfareBalance.b, requests, pendingAmt: pendingAmt.t, error: 'All fields required', message: null, pageTitle: 'Welfare Request', success: null });
   }
-  await db.prepare("INSERT INTO welfare_requests (member_id, amount, reason, beneficiary_name, beneficiary_id_number, relationship, description) VALUES (?, ?, ?, ?, ?, ?, ?)").run(memberId, amount, reason, beneficiary_name, beneficiary_id_number, relationship, description || null);
+  await db.prepare("INSERT INTO welfare_requests (member_id, amount, reason, beneficiary_name, beneficiary_id_number, relationship, description, created_by, created_by_role) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)").run(memberId, amount, reason, beneficiary_name, beneficiary_id_number, relationship, description || null, req.session.user.id, req.session.user.admin_role || 'member');
   await notify(null, 'Welfare Request', req.session.user.memberName + ' requested KES ' + Number(amount).toLocaleString() + ' welfare: ' + reason, 'warning', '/admin/welfare');
   auditLog(req.session.user, 'create', 'welfare_request', null, 'KES ' + amount + ' welfare for ' + beneficiary_name);
   res.redirect('/member/welfare?success=1');
@@ -178,6 +182,8 @@ app.post('/admin/welfare/approve/:id', async (req, res) => {
   if (!req.session.user || req.session.user.role !== 'admin') return res.redirect('/login');
   const wr = await db.prepare("SELECT * FROM welfare_requests WHERE id = ? AND status = 'pending'").get(req.params.id);
   if (!wr) return res.redirect('/admin/welfare');
+  const check = checkApprovalRight(req.session.user, wr);
+  if (!check.ok) return res.redirect('/admin/welfare?error=' + encodeURIComponent(check.reason));
   const welfareFund = await db.prepare("SELECT COALESCE(SUM(balance),0) as t FROM member_balances WHERE fund_type_id = 1").get();
   if (welfareFund.t < wr.amount) return res.redirect('/admin/welfare?error=insufficient');
   await db.transaction(async function() {
@@ -192,6 +198,8 @@ app.post('/admin/welfare/approve/:id', async (req, res) => {
 app.post('/admin/welfare/reject/:id', async (req, res) => {
   if (!req.session.user || req.session.user.role !== 'admin') return res.redirect('/login');
   const wr = await db.prepare("SELECT * FROM welfare_requests WHERE id = ? AND status = 'pending'").get(req.params.id);
+  const check = checkApprovalRight(req.session.user, wr);
+  if (wr && !check.ok) return res.redirect('/admin/welfare?error=' + encodeURIComponent(check.reason));
   if (wr) { await db.prepare("UPDATE welfare_requests SET status = 'rejected', reviewed_by = ?, reviewed_at = datetime('now') WHERE id = ?").run(req.session.user.id, wr.id);
     await notify(wr.member_id, 'Welfare Rejected', 'KES ' + wr.amount.toLocaleString() + ' welfare rejected', 'error', '/member/welfare');
     auditLog(req.session.user, 'reject', 'welfare_request', wr.id, 'KES ' + wr.amount); }
@@ -390,7 +398,7 @@ app.post('/withdraw', async (req, res) => {
   if (!fund_type_id || amount <= 0) return res.redirect('/withdraw');
   const bal = await db.prepare("SELECT COALESCE(balance,0) as b FROM member_balances WHERE member_id = ? AND fund_type_id = ?").get(memberId, fund_type_id);
   if (!bal || bal.b < amount) return res.redirect('/withdraw');
-  await db.prepare("INSERT INTO withdrawal_requests (member_id, fund_type_id, amount) VALUES (?, ?, ?)").run(memberId, fund_type_id, amount);
+  await db.prepare("INSERT INTO withdrawal_requests (member_id, fund_type_id, amount, created_by, created_by_role) VALUES (?, ?, ?, ?, ?)").run(memberId, fund_type_id, amount, req.session.user.id, req.session.user.admin_role || 'member');
   await db.prepare("INSERT INTO notifications (member_id, title, message, type, link) VALUES (?, 'Withdrawal Request', ?, 'warning', '/admin/approvals')").run(null, `${req.session.user.memberName} requested KES ${amount.toLocaleString()} withdrawal`);
   auditLog(req.session.user, 'create', 'withdrawal_request', null, `KES ${amount} withdrawal requested from fund ${fund_type_id}`);
   res.redirect('/withdraw');
@@ -472,6 +480,19 @@ async function notify(memberId, title, message, type, link) {
   try { await db.prepare("INSERT INTO notifications (member_id, title, message, type, link) VALUES (?, ?, ?, ?, ?)").run(memberId, title, message, type || 'info', link || null); } catch(e) {}
 }
 global.notify = notify;
+
+// --- Cross-approval helper (chairman/treasurer must not approve their own transaction) ---
+// Returns { ok: true } or { ok: false, reason: '...' }
+function checkApprovalRight(user, record) {
+  if (!user || user.role !== 'admin') return { ok: false, reason: 'Only an admin can approve this.' };
+  if (!record) return { ok: false, reason: 'Record not found.' };
+  if (!record.created_by) return { ok: true }; // legacy record with no creator: allow
+  if (record.created_by === user.id) return { ok: false, reason: 'You cannot approve a transaction you entered yourself.' };
+  if (record.created_by_role === 'chairman' && user.admin_role !== 'treasurer') return { ok: false, reason: 'This transaction was entered by the chairman. Only the treasurer may approve it.' };
+  if (record.created_by_role === 'treasurer' && user.admin_role !== 'chairman') return { ok: false, reason: 'This transaction was entered by the treasurer. Only the chairman may approve it.' };
+  return { ok: true };
+}
+global.checkApprovalRight = checkApprovalRight;
 
 global.db = db;
 

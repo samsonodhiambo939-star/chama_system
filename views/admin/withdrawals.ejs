@@ -1,6 +1,7 @@
 <% header('Withdrawal Requests'); %>
 <div class="page-title">Withdrawal Requests</div>
 <p class="page-subtitle">Approve or reject member withdrawal requests</p>
+<% if (typeof error !== 'undefined' && error) { %><div class="alert alert-error"><span class="alert-icon">⚠️</span><span><%= error %></span></div><% } %>
 
 <div class="card">
   <% if (requests.length === 0) { %>

@@ -99,13 +99,13 @@ router.post('/contribute', async (req, res) => {
     // 1. Cycle contributions (4 funds) — only if cycle is active
     if (currentCycle) {
       const upsert = db.prepare(`
-        INSERT INTO contributions (member_id, fund_type_id, cycle_id, amount, status)
-        VALUES (?, ?, ?, ?, 'pending')
-        ON CONFLICT(member_id, fund_type_id, cycle_id) DO UPDATE SET amount = excluded.amount, status = 'pending'
+        INSERT INTO contributions (member_id, fund_type_id, cycle_id, amount, status, created_by, created_by_role)
+        VALUES (?, ?, ?, ?, 'pending', ?, ?)
+        ON CONFLICT(member_id, fund_type_id, cycle_id) DO UPDATE SET amount = excluded.amount, status = 'pending', created_by = excluded.created_by, created_by_role = excluded.created_by_role
       `);
       for (const fund of funds.filter(f => f.name !== 'Loans')) {
         const amount = parseFloat(req.body[`fund_${fund.id}`]) || 0;
-        await upsert.run(memberId, fund.id, currentCycle.id, amount);
+        await upsert.run(memberId, fund.id, currentCycle.id, amount, req.session.user.id, req.session.user.admin_role || 'member');
       }
     }
 
@@ -117,7 +117,7 @@ router.post('/contribute', async (req, res) => {
       const available = totalFinesBalance - pendingFineRequests;
       if (available > 0) {
         const repay = Math.min(fineAmount, available);
-        await db.prepare("INSERT INTO payment_requests (member_id, payment_type, amount) VALUES (?, 'fine', ?)").run(memberId, repay);
+        await db.prepare("INSERT INTO payment_requests (member_id, payment_type, amount, created_by, created_by_role) VALUES (?, 'fine', ?, ?, ?)").run(memberId, repay, req.session.user.id, req.session.user.admin_role || 'member');
       }
     }
 
@@ -130,7 +130,7 @@ router.post('/contribute', async (req, res) => {
       const available = cardBalance - pendingCardRequests;
       if (available > 0) {
         const repay = Math.min(cardAmount, available);
-        await db.prepare("INSERT INTO payment_requests (member_id, payment_type, amount) VALUES (?, 'member_card', ?)").run(memberId, repay);
+        await db.prepare("INSERT INTO payment_requests (member_id, payment_type, amount, created_by, created_by_role) VALUES (?, 'member_card', ?, ?, ?)").run(memberId, repay, req.session.user.id, req.session.user.admin_role || 'member');
       }
     }
 
@@ -143,7 +143,7 @@ router.post('/contribute', async (req, res) => {
         const available = activeLoan.amount_due - pendingLoanRequests;
         if (available > 0) {
           const repay = Math.min(loanAmount, available);
-          await db.prepare("INSERT INTO payment_requests (member_id, payment_type, reference_id, amount) VALUES (?, 'loan', ?, ?)").run(memberId, activeLoan.id, repay);
+          await db.prepare("INSERT INTO payment_requests (member_id, payment_type, reference_id, amount, created_by, created_by_role) VALUES (?, 'loan', ?, ?, ?, ?)").run(memberId, activeLoan.id, repay, req.session.user.id, req.session.user.admin_role || 'member');
         }
       }
     }
@@ -204,9 +204,9 @@ router.post('/loans/apply', async (req, res) => {
   if (amount > maxLoan) return res.renderWithLayout('member/loans', { totalQualifying, maxLoan, qualifies: true, activeLoan: null, pendingLoan: null, pastLoans, error: `Maximum loan is KES ${maxLoan.toLocaleString()}` });
 
   await db.prepare(`
-    INSERT INTO loans (member_id, amount, interest_rate, amount_due, status)
-    VALUES (?, ?, 10, ?, 'pending')
-  `).run(memberId, amount, amount);
+    INSERT INTO loans (member_id, amount, interest_rate, amount_due, status, created_by, created_by_role)
+    VALUES (?, ?, 10, ?, 'pending', ?, ?)
+  `).run(memberId, amount, amount, req.session.user.id, req.session.user.admin_role || 'member');
 
   res.redirect('/member/loans');
 });
@@ -221,7 +221,7 @@ router.post('/loans/repay', async (req, res) => {
 
   const remaining = activeLoan.amount_due - activeLoan.paid_amount;
   const actualRepay = Math.min(repayAmount, remaining);
-  await db.prepare("INSERT INTO payment_requests (member_id, payment_type, reference_id, amount) VALUES (?, 'loan', ?, ?)").run(memberId, activeLoan.id, actualRepay);
+  await db.prepare("INSERT INTO payment_requests (member_id, payment_type, reference_id, amount, created_by, created_by_role) VALUES (?, 'loan', ?, ?, ?, ?)").run(memberId, activeLoan.id, actualRepay, req.session.user.id, req.session.user.admin_role || 'member');
   res.redirect('/member/loans');
 });
 
@@ -241,7 +241,7 @@ router.post('/fines/pay/:id', async (req, res) => {
   if (!fine) return res.redirect('/member/fines');
   const repayAmount = Math.min(parseFloat(req.body.repay_amount) || fine.balance, fine.balance);
   if (repayAmount <= 0) return res.redirect('/member/fines');
-  await db.prepare("INSERT INTO payment_requests (member_id, payment_type, reference_id, amount) VALUES (?, 'fine', ?, ?)").run(memberId, fine.id, repayAmount);
+  await db.prepare("INSERT INTO payment_requests (member_id, payment_type, reference_id, amount, created_by, created_by_role) VALUES (?, 'fine', ?, ?, ?, ?)").run(memberId, fine.id, repayAmount, req.session.user.id, req.session.user.admin_role || 'member');
   res.redirect('/member/fines');
 });
 
@@ -261,7 +261,7 @@ router.post('/membercard/pay', async (req, res) => {
   const repayAmount = parseFloat(req.body.repay_amount) || 0;
   const currentBalance = card.assigned_amount - card.paid_amount;
   if (repayAmount <= 0 || repayAmount > currentBalance) return res.redirect('/member/membercard');
-  await db.prepare("INSERT INTO payment_requests (member_id, payment_type, reference_id, amount) VALUES (?, 'member_card', NULL, ?)").run(memberId, repayAmount);
+  await db.prepare("INSERT INTO payment_requests (member_id, payment_type, reference_id, amount, created_by, created_by_role) VALUES (?, 'member_card', NULL, ?, ?, ?)").run(memberId, repayAmount, req.session.user.id, req.session.user.admin_role || 'member');
   res.redirect('/member/membercard');
 });
 

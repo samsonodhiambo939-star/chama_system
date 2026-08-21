@@ -1,6 +1,8 @@
 <% header('Member Card'); %>
 <div class="page-title">Member Card Management</div>
 <p class="page-subtitle">Assign card amounts that members must repay</p>
+<% if (typeof message !== 'undefined' && message) { %><div class="alert alert-success"><span class="alert-icon">✅</span><span><%= message %></span></div><% } %>
+<% if (typeof error !== 'undefined' && error) { %><div class="alert alert-error"><span class="alert-icon">⚠️</span><span><%= error %></span></div><% } %>
 
 <div class="card">
   <div class="card-header"><h3>Assign Card Amount</h3></div>
