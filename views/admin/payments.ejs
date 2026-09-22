@@ -21,14 +21,22 @@
             <td><span class="badge badge-<%= r.status %>"><%= r.status %></span></td>
             <td>
               <% if (r.status === 'pending') { %>
-                <div style="display:flex;gap:6px;">
-                  <form method="POST" action="/admin/payments/approve/<%= r.id %>">
-                    <button class="btn btn-success btn-sm">Approve</button>
-                  </form>
-                  <form method="POST" action="/admin/payments/reject/<%= r.id %>" onsubmit="return confirm('Reject this payment?')">
-                    <button class="btn btn-danger btn-sm">Reject</button>
-                  </form>
-                </div>
+                <% if (r.created_by == user.id) { %>
+                  <span class="badge badge-pending">Entered by you — cannot self-approve</span>
+                <% } else if (r.created_by_role === 'chairman' && user.admin_role === 'chairman') { %>
+                  <span class="badge badge-info">Entered by chairman — treasurer must approve</span>
+                <% } else if (r.created_by_role === 'treasurer' && user.admin_role === 'treasurer') { %>
+                  <span class="badge badge-info">Entered by treasurer — chairman must approve</span>
+                <% } else { %>
+                  <div style="display:flex;gap:6px;">
+                    <form method="POST" action="/admin/payments/approve/<%= r.id %>">
+                      <button class="btn btn-success btn-sm">Approve</button>
+                    </form>
+                    <form method="POST" action="/admin/payments/reject/<%= r.id %>" onsubmit="return confirm('Reject this payment?')">
+                      <button class="btn btn-danger btn-sm">Reject</button>
+                    </form>
+                  </div>
+                <% } %>
               <% } else { %>
                 <span class="text-xs text-muted">—</span>
               <% } %>

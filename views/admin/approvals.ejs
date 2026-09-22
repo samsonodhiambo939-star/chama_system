@@ -35,7 +35,7 @@
             <td class="text-sm"><%= c.start_date %> — <%= c.end_date %></td>
             <td class="text-sm"><%= new Date(c.created_at).toLocaleDateString() %></td>
             <td style="white-space:nowrap;">
-              <% if (c.created_by === user.id) { %>
+              <% if (c.created_by == user.id) { %>
                 <span class="badge badge-pending">Entered by you — cannot self-approve</span>
               <% } else if (c.created_by_role === 'chairman' && user.admin_role === 'chairman') { %>
                 <span class="badge badge-info">Entered by chairman — treasurer must approve</span>
@@ -73,7 +73,7 @@
             <td style="text-align:right;font-weight:700;color:#ef4444;">KES <%= Number(l.amount * 1.1).toLocaleString() %></td>
             <td class="text-sm"><%= new Date(l.created_at).toLocaleDateString() %></td>
             <td style="white-space:nowrap;">
-              <% if (l.created_by === user.id) { %>
+              <% if (l.created_by == user.id) { %>
                 <span class="badge badge-pending">Entered by you — cannot self-approve</span>
               <% } else if (l.created_by_role === 'chairman' && user.admin_role === 'chairman') { %>
                 <span class="badge badge-info">Entered by chairman — treasurer must approve</span>
@@ -116,7 +116,7 @@
             <td style="text-align:right;font-weight:700;">KES <%= Number(r.amount).toLocaleString() %></td>
             <td class="text-sm"><%= new Date(r.created_at).toLocaleDateString() %></td>
             <td style="white-space:nowrap;">
-              <% if (r.created_by === user.id) { %>
+              <% if (r.created_by == user.id) { %>
                 <span class="badge badge-pending">Entered by you — cannot self-approve</span>
               <% } else if (r.created_by_role === 'chairman' && user.admin_role === 'chairman') { %>
                 <span class="badge badge-info">Entered by chairman — treasurer must approve</span>
